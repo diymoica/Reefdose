@@ -3,6 +3,8 @@
 All notable changes to this project are documented here.
 Format based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 
+> 🇫🇷 Ce changelog est rédigé en anglais — langue standard pour la documentation technique open source.
+
 ---
 
 ## [0.9.4]
