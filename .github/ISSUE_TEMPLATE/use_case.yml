@@ -1,0 +1,55 @@
+name: 🌍 Share your use case
+description: Tell us how you're using ReefDose — helps grow the community
+title: "[USE CASE] "
+labels: ["use-case", "community"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Using ReefDose for something original? Share it here!
+        Your use case might inspire others and help shape future features.
+
+  - type: input
+    id: title
+    attributes:
+      label: Use case title
+      placeholder: "e.g. Automated nutrient dosing for a 200L hydroponic system"
+    validations:
+      required: true
+
+  - type: dropdown
+    id: domain
+    attributes:
+      label: Domain
+      options:
+        - Reef aquarium
+        - Freshwater aquarium
+        - Hydroponics
+        - Indoor plants
+        - Brewing
+        - Cosmetics / DIY lab
+        - Other
+    validations:
+      required: true
+
+  - type: textarea
+    id: description
+    attributes:
+      label: Describe your setup
+      description: What are you dosing? How many pumps? What's your schedule?
+    validations:
+      required: true
+
+  - type: textarea
+    id: tips
+    attributes:
+      label: Tips for others with the same use case
+      description: Anything you'd recommend to someone starting from scratch?
+
+  - type: checkboxes
+    id: share
+    attributes:
+      label: Community
+      options:
+        - label: I'm happy for this use case to be featured in the README
+          required: false
