@@ -1,0 +1,60 @@
+name: 💡 Feature Request
+description: Suggest an idea or improvement
+title: "[FEATURE] "
+labels: ["enhancement"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Got an idea? We'd love to hear it!
+        The more context you give, the better we can evaluate it.
+
+  - type: dropdown
+    id: use_case
+    attributes:
+      label: Your use case
+      description: What are you using ReefDose for?
+      options:
+        - Reef aquarium
+        - Hydroponics
+        - Indoor plants
+        - Brewing
+        - DIY lab
+        - Other
+    validations:
+      required: true
+
+  - type: textarea
+    id: problem
+    attributes:
+      label: What problem does this solve?
+      description: Describe the situation where you need this feature
+      placeholder: "e.g. I want to pause dosing during water changes without losing my schedule"
+    validations:
+      required: true
+
+  - type: textarea
+    id: solution
+    attributes:
+      label: What would you like to see?
+      description: Describe the feature as clearly as possible
+      placeholder: "e.g. A 'Water change mode' toggle that pauses all pumps for X hours then resumes"
+    validations:
+      required: true
+
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives you've considered
+      description: Any workarounds you currently use?
+
+  - type: dropdown
+    id: priority
+    attributes:
+      label: How important is this for you?
+      options:
+        - Nice to have
+        - Important
+        - Blocking my use case
+    validations:
+      required: true
