@@ -1,0 +1,72 @@
+name: 🐛 Bug Report
+description: Something is not working as expected
+title: "[BUG] "
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for taking the time to report a bug!
+        Please fill in as much detail as possible.
+
+  - type: input
+    id: version
+    attributes:
+      label: ReefDose version
+      description: Which version are you running?
+      placeholder: "e.g. v0.9.4"
+    validations:
+      required: true
+
+  - type: input
+    id: ha_version
+    attributes:
+      label: Home Assistant version
+      placeholder: "e.g. 2024.3.0"
+    validations:
+      required: true
+
+  - type: dropdown
+    id: use_case
+    attributes:
+      label: Your use case
+      options:
+        - Reef aquarium
+        - Hydroponics
+        - Indoor plants
+        - Brewing
+        - DIY lab
+        - Other
+    validations:
+      required: true
+
+  - type: textarea
+    id: description
+    attributes:
+      label: What happened?
+      description: Describe the bug clearly
+      placeholder: "e.g. Pump 2 doses twice in a row despite frequency set to 4/day"
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: What did you expect?
+      placeholder: "e.g. Only one dose per interval"
+    validations:
+      required: true
+
+  - type: textarea
+    id: config
+    attributes:
+      label: Your pump configuration
+      description: Paste the relevant settings (dose, frequency, window, delays)
+      render: yaml
+
+  - type: textarea
+    id: logs
+    attributes:
+      label: HA logs (if relevant)
+      description: Settings → System → Logs → filter "rd_"
+      render: text
