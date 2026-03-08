@@ -23,7 +23,7 @@ reef aquariums, freshwater tanks, hydroponics, plant care, brewing, DIY lab, and
 Each pump is fully configurable — name, schedule, frequency, compatibility with other pumps.
 No logic is imposed : you decide everything.
 
-> ⚠️ **Pre-release** — actively tested on a real reef aquarium. Core features are functional.
+> ⚠️ **Pre-release** — actively tested on a real reef aquarium. Core features are functional and validated.
 > See the [ROADMAP](ROADMAP.md) for what's coming before v1.0.0.
 
 ---
@@ -38,9 +38,16 @@ No logic is imposed : you decide everything.
 - **Cycle reset option** — manual dose can optionally shift the auto schedule
 
 #### Safety
-- **Compatibility matrix** — minimum delay between each pump pair (6 configurable pairs)
+- **Compatibility matrix** — minimum delay between each pump pair (6 configurable pairs), offsets calculated automatically
+- **Mechanical delay** — configurable delay between sequential doses (1–30s)
 - **Real-time validation** — warning if window is too short for requested frequency
 - **Global pause** — stops all pumps instantly
+
+#### Simulation
+- **Simulation mode** — test full timing and sequencing without affecting real data
+- **Configurable interval** — simulate doses every 1–10 min
+- **Real pump toggle** — optionally fire real pumps during simulation
+- **Auto-reload** — automations reload automatically when simulation ends
 
 #### Monitoring
 - **Tank management** — remaining volume, % level, days remaining, low level alert per pump
@@ -294,9 +301,16 @@ Aucune logique n'est imposée : vous décidez de tout.
 - **Option reset de cycle** — une dose manuelle peut décaler le planning automatique
 
 #### Sécurité
-- **Matrice de compatibilité** — délai minimum entre chaque paire de pompes (6 paires configurables)
+- **Matrice de compatibilité** — délai minimum entre chaque paire de pompes (6 paires configurables), offsets calculés automatiquement
+- **Délai mécanique** — délai configurable entre doses séquentielles (1–30s)
 - **Validation en temps réel** — alerte si la fenêtre est trop courte pour la fréquence demandée
 - **Pause globale** — arrête toutes les pompes instantanément
+
+#### Simulation
+- **Mode simulation** — testez le timing complet sans affecter les données réelles
+- **Intervalle configurable** — simulez les doses toutes les 1–10 min
+- **Toggle pompes réelles** — déclenchez optionnellement les vraies pompes en simulation
+- **Rechargement auto** — les automations se rechargent automatiquement à la fin de la simulation
 
 #### Surveillance
 - **Gestion des réservoirs** — volume restant, % niveau, jours restants, alerte seuil bas par pompe
