@@ -1,0 +1,144 @@
+##################################################################################################################################
+#                                                                                                                                #
+#                                              DMDose - ESPHome                                                                  #
+#                                                                                                                                #
+#   Board    : ESP32 Dev                                                                                                         #
+#   IP fixe  : définie dans la section wifi ci-dessous (manual_ip)                                                              #
+#                                                                                                                                #
+#   GPIO :                                                                                                                       #
+#     - GPIO27 → Pompe 1                                                                                                        #
+#     - GPIO12 → Pompe 2                                                                                                        #
+#     - GPIO13 → Pompe 3                                                                                                        #
+#     - GPIO14 → Pompe 4                                                                                                        #
+#                                                                                                                                #
+##################################################################################################################################
+
+esphome:
+  name: dmd
+  friendly_name: DIY my Dose
+
+esp32:
+  board: esp32dev
+  framework:
+    type: arduino
+
+
+# ----------------------------------------------------------------
+#  Logging
+# ----------------------------------------------------------------
+logger:
+  level: INFO
+
+# ----------------------------------------------------------------
+#  API Home Assistant
+# ----------------------------------------------------------------
+api:
+  encryption:
+    key: !secret esphome_api_key
+    # Generate your own key in ESPHome UI or with: esphome generate-key
+
+
+# ----------------------------------------------------------------
+#  OTA (mise à jour sans fil)
+# ----------------------------------------------------------------
+ota:
+  - platform: esphome
+    password: !secret esphome_ota_password
+    # Set a strong password in your secrets.yaml
+
+# ----------------------------------------------------------------
+#  WiFi
+# ----------------------------------------------------------------
+wifi:
+  ssid: !secret wifi_ssid
+  password: !secret wifi_password
+
+  # Optional: set a static IP (recommended for stable HA connection)
+  # manual_ip:
+  #   static_ip: 192.168.X.XX    # ← your ESP32 IP
+  #   gateway: 192.168.X.1       # ← your router IP
+  #   subnet: 255.255.255.0
+
+  ap:
+    ssid: "DMDose Fallback Hotspot"
+    password: !secret esphome_ap_password
+    # Set a fallback hotspot password in your secrets.yaml
+
+captive_portal:
+
+# ----------------------------------------------------------------
+#  Interface web locale (accès direct via http://<your-esp32-ip>)
+# ----------------------------------------------------------------
+web_server:
+  port: 80
+
+# ----------------------------------------------------------------
+#  Statut de connexion
+# ----------------------------------------------------------------
+binary_sensor:
+  - platform: status
+    name: "Status"
+
+# ----------------------------------------------------------------
+#  Switchs des pompes
+#  restore_mode: ALWAYS_OFF → sécurité au redémarrage
+#  Sans ça, une pompe pourrait rester bloquée ON après un reboot
+# ----------------------------------------------------------------
+switch:
+  - platform: gpio
+    pin: GPIO27
+    name: "Pompe_1"
+    id: pompe_1
+    icon: "mdi:pump"
+    restore_mode: ALWAYS_OFF
+
+  - platform: gpio
+    pin: GPIO12
+    name: "Pompe_2"
+    id: pompe_2
+    icon: "mdi:pump"
+    restore_mode: ALWAYS_OFF
+
+  - platform: gpio
+    pin: GPIO13
+    name: "Pompe_3"
+    id: pompe_3
+    icon: "mdi:pump"
+    restore_mode: ALWAYS_OFF
+
+  - platform: gpio
+    pin: GPIO14
+    name: "Pompe_4"
+    id: pompe_4
+    icon: "mdi:pump"
+    restore_mode: ALWAYS_OFF
+
+# ----------------------------------------------------------------
+#  Sensors exposés dans Home Assistant
+# ----------------------------------------------------------------
+sensor:
+  - platform: uptime
+    name: "Uptime"
+    update_interval: 60s
+    icon: "mdi:clock-start"
+
+  - platform: wifi_signal
+    name: "WiFi"
+    update_interval: 60s
+    icon: "mdi:wifi"
+
+# ----------------------------------------------------------------
+#  Infos texte exposées dans Home Assistant
+# ----------------------------------------------------------------
+text_sensor:
+  - platform: wifi_info
+    ip_address:
+      name: "IP"
+      icon: "mdi:ip-network"
+    ssid:
+      name: "SSID"
+      icon: "mdi:router-wireless"
+
+  - platform: version
+    name: "Version ESPHome"
+    icon: "mdi:information"
