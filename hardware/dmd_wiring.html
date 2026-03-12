@@ -1,0 +1,544 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>DIY my Dose — Wiring Diagram</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Rajdhani:wght@400;600;700&display=swap');
+  :root {
+    --bg:#0d1117; --panel:#161b22; --border:#30363d;
+    --accent:#00d4aa; --red:#ff4444; --yellow:#ffd166;
+    --blue:#4cc9f0; --orange:#f77f00; --text:#e6edf3; --muted:#8b949e;
+  }
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body { background:var(--bg); color:var(--text); font-family:'Rajdhani',sans-serif; padding:24px; }
+  h1 { font-size:1.5rem; font-weight:700; color:var(--accent); letter-spacing:2px; text-transform:uppercase; margin-bottom:4px; }
+  .subtitle { font-family:'Share Tech Mono',monospace; font-size:0.75rem; color:var(--muted); margin-bottom:16px; }
+
+  .lang-bar { display:flex; gap:8px; margin-bottom:20px; flex-wrap:wrap; }
+  .lang-btn {
+    padding:6px 16px; border-radius:4px; border:1px solid var(--border);
+    background:var(--panel); color:var(--muted); cursor:pointer;
+    font-family:'Rajdhani',sans-serif; font-size:0.85rem; font-weight:600;
+    letter-spacing:1px; text-transform:uppercase; transition:all .15s;
+  }
+  .lang-btn:hover { border-color:var(--accent); color:var(--accent); }
+  .lang-btn.active { background:#0d2520; border-color:var(--accent); color:var(--accent); }
+
+  .layout { display:grid; grid-template-columns:1fr 370px; gap:20px; max-width:1200px; }
+  .diagram-wrap { background:var(--panel); border:1px solid var(--border); border-radius:8px; overflow:hidden; }
+  svg { width:100%; height:auto; display:block; }
+  .sidebar { display:flex; flex-direction:column; gap:14px; }
+  .card { background:var(--panel); border:1px solid var(--border); border-radius:8px; padding:14px; }
+  .card h3 { font-size:0.65rem; font-weight:700; letter-spacing:2px; text-transform:uppercase; color:var(--accent); margin-bottom:10px; padding-bottom:8px; border-bottom:1px solid var(--border); }
+  .legend-item { display:flex; align-items:center; gap:10px; margin-bottom:7px; font-size:0.85rem; }
+  .wire { width:30px; height:3px; border-radius:2px; flex-shrink:0; }
+  .wire-dashed { width:30px; height:3px; flex-shrink:0; background:repeating-linear-gradient(90deg,#00d4aa 0,#00d4aa 5px,transparent 5px,transparent 8px); }
+  table { width:100%; border-collapse:collapse; font-size:0.82rem; }
+  th { text-align:left; padding:5px 8px; font-size:0.65rem; letter-spacing:1px; text-transform:uppercase; color:var(--muted); border-bottom:1px solid var(--border); }
+  td { padding:6px 8px; border-bottom:1px solid #21262d; }
+  tr:last-child td { border-bottom:none; }
+  .badge { display:inline-block; padding:2px 7px; border-radius:3px; font-family:'Share Tech Mono',monospace; font-size:0.72rem; font-weight:600; }
+  .g { background:#1f3a2a; color:#00d4aa; }
+  .o { background:#3a2a1f; color:#f77f00; }
+  .k { background:#222; color:#aaa; }
+  .bom-item { display:flex; justify-content:space-between; align-items:flex-start; padding:7px 0; border-bottom:1px solid #21262d; font-size:0.82rem; gap:8px; }
+  .bom-item:last-child { border-bottom:none; }
+  .bom-ref { font-family:'Share Tech Mono',monospace; font-size:0.68rem; color:var(--muted); margin-top:2px; }
+  .bom-qty { font-weight:700; color:var(--accent); white-space:nowrap; }
+  .warn { background:#2a1f00; border:1px solid #664d00; border-radius:6px; padding:10px 12px; font-size:0.8rem; color:var(--yellow); line-height:1.6; }
+  .warn strong { display:block; margin-bottom:4px; font-size:0.65rem; letter-spacing:1px; text-transform:uppercase; }
+  .psu { background:#1a2a1a; border:1px solid #2a4a2a; border-radius:6px; padding:12px; font-size:0.82rem; line-height:1.6; }
+  .psu strong { display:block; margin-bottom:6px; font-size:0.65rem; letter-spacing:1px; text-transform:uppercase; color:#00d4aa; }
+  .psu-opt { display:flex; justify-content:space-between; align-items:center; padding:4px 0; border-bottom:1px solid #21262d; gap:8px; }
+  .psu-opt:last-child { border-bottom:none; }
+  .psu-note { font-size:0.72rem; color:#555; margin-top:8px; }
+  .tag { font-size:0.7rem; padding:1px 6px; border-radius:3px; font-weight:700; white-space:nowrap; }
+  .tag-rec { background:#1f3a2a; color:#00d4aa; }
+  .tag-ok { background:#1f2a3a; color:#4cc9f0; }
+  .credit {
+    background:#12181f; border:1px solid #1f3a4a; border-radius:6px;
+    padding:10px 14px; font-size:0.8rem; line-height:1.6; color:var(--muted);
+  }
+  .credit strong { color:var(--blue); font-size:0.65rem; letter-spacing:1px; text-transform:uppercase; display:block; margin-bottom:4px; }
+  .credit a { color:var(--blue); text-decoration:none; }
+  .credit a:hover { text-decoration:underline; }
+
+  /* i18n: hide all languages, show active */
+  [data-lang] { display:none; }
+  [data-lang].visible { display:block; }
+  [data-lang-inline] { display:none; }
+  [data-lang-inline].visible { display:inline; }
+</style>
+</head>
+<body>
+
+<h1>DIY my Dose — Wiring Diagram</h1>
+<p class="subtitle">v0.9.9 · ESP32 WR-32 + ULN2003 (28BYJ-48 driver board) + LM2596 · 4 pumps 12V DC</p>
+
+<div class="lang-bar">
+  <button class="lang-btn active" onclick="setLang('en')">🇬🇧 EN</button>
+  <button class="lang-btn" onclick="setLang('fr')">🇫🇷 FR</button>
+  <button class="lang-btn" onclick="setLang('es')">🇪🇸 ES</button>
+  <button class="lang-btn" onclick="setLang('de')">🇩🇪 DE</button>
+  <button class="lang-btn" onclick="setLang('it')">🇮🇹 IT</button>
+</div>
+
+<div class="layout">
+
+  <!-- ═══ DIAGRAM (universal — no text to translate) ═══ -->
+  <div class="diagram-wrap">
+    <svg viewBox="0 0 780 510" xmlns="http://www.w3.org/2000/svg">
+      <pattern id="grid" width="20" height="20" patternUnits="userSpaceOnUse">
+        <path d="M20 0L0 0 0 20" fill="none" stroke="#1a2030" stroke-width="0.5"/>
+      </pattern>
+      <rect width="780" height="510" fill="url(#grid)"/>
+
+      <!-- 12V BUS -->
+      <line x1="20" y1="38" x2="760" y2="38" stroke="#ff4444" stroke-width="2.5"/>
+      <text x="26" y="32" font-family="Share Tech Mono,monospace" font-size="9" fill="#ff4444" font-weight="bold">12V BUS (+)</text>
+
+      <!-- GND BUS -->
+      <line x1="20" y1="445" x2="760" y2="445" stroke="#555" stroke-width="2.5"/>
+      <text x="26" y="439" font-family="Share Tech Mono,monospace" font-size="9" fill="#777">GND BUS (−)</text>
+
+      <!-- ══ PSU ══ -->
+      <rect x="22" y="162" width="88" height="80" rx="6" fill="#1a1a2e" stroke="#ff4444" stroke-width="1.5"/>
+      <text x="66" y="189" text-anchor="middle" font-family="Rajdhani,sans-serif" font-size="12" font-weight="700" fill="#ff6b6b">12V DC</text>
+      <text x="66" y="205" text-anchor="middle" font-family="Share Tech Mono,monospace" font-size="9" fill="#888">POWER</text>
+      <text x="66" y="219" text-anchor="middle" font-family="Share Tech Mono,monospace" font-size="9" fill="#888">SUPPLY</text>
+      <line x1="66" y1="162" x2="66" y2="38" stroke="#ff4444" stroke-width="2"/>
+      <line x1="66" y1="242" x2="66" y2="445" stroke="#555" stroke-width="2"/>
+
+      <!-- ══ LM2596 ══ -->
+      <rect x="150" y="162" width="105" height="80" rx="6" fill="#1a2010" stroke="#f77f00" stroke-width="1.5"/>
+      <text x="202" y="187" text-anchor="middle" font-family="Rajdhani,sans-serif" font-size="12" font-weight="700" fill="#f77f00">LM2596</text>
+      <text x="202" y="202" text-anchor="middle" font-family="Share Tech Mono,monospace" font-size="9" fill="#888">Buck 12V → 5V</text>
+      <text x="202" y="218" text-anchor="middle" font-family="Share Tech Mono,monospace" font-size="8" fill="#ffd166">⚠ Set to 5V first!</text>
+      <!-- IN+ from 12V bus -->
+      <line x1="202" y1="162" x2="202" y2="38" stroke="#ff4444" stroke-width="1.5" stroke-dasharray="4,2"/>
+      <!-- IN− to GND bus -->
+      <line x1="175" y1="242" x2="175" y2="445" stroke="#555" stroke-width="1.5"/>
+      <!-- OUT+ → ESP32 VIN -->
+      <line x1="255" y1="178" x2="298" y2="178" stroke="#f77f00" stroke-width="2"/>
+      <text x="257" y="173" font-family="Share Tech Mono,monospace" font-size="8" fill="#f77f00">5V →</text>
+      <!-- OUT− → GND bus -->
+      <line x1="228" y1="242" x2="228" y2="385" stroke="#555" stroke-width="1.5"/>
+      <line x1="228" y1="385" x2="298" y2="385" stroke="#555" stroke-width="1.5"/>
+
+      <!-- ══ ESP32 ══ -->
+      <rect x="298" y="122" width="132" height="202" rx="8" fill="#0d2137" stroke="#4cc9f0" stroke-width="1.5"/>
+      <text x="364" y="150" text-anchor="middle" font-family="Rajdhani,sans-serif" font-size="14" font-weight="700" fill="#4cc9f0">ESP32</text>
+      <text x="364" y="165" text-anchor="middle" font-family="Share Tech Mono,monospace" font-size="8" fill="#8b949e">WR-32 · USB-C · CH340C</text>
+      <!-- Left pins -->
+      <circle cx="298" cy="178" r="4" fill="#f77f00"/>
+      <text x="293" y="175" text-anchor="end" font-family="Share Tech Mono,monospace" font-size="8" fill="#f77f00">VIN</text>
+      <circle cx="298" cy="198" r="4" fill="#555"/>
+      <text x="293" y="195" text-anchor="end" font-family="Share Tech Mono,monospace" font-size="8" fill="#888">GND</text>
+      <line x1="298" y1="198" x2="272" y2="198" stroke="#555" stroke-width="1.5"/>
+      <line x1="272" y1="198" x2="272" y2="445" stroke="#555" stroke-width="1.5"/>
+      <!-- Right GPIO pins -->
+      <circle cx="430" cy="192" r="4" fill="#00d4aa"/>
+      <text x="435" y="196" font-family="Share Tech Mono,monospace" font-size="8" fill="#00d4aa">GPIO27 → P1</text>
+      <circle cx="430" cy="212" r="4" fill="#00d4aa"/>
+      <text x="435" y="216" font-family="Share Tech Mono,monospace" font-size="8" fill="#00d4aa">GPIO12 → P2</text>
+      <circle cx="430" cy="232" r="4" fill="#00d4aa"/>
+      <text x="435" y="236" font-family="Share Tech Mono,monospace" font-size="8" fill="#00d4aa">GPIO13 → P3</text>
+      <circle cx="430" cy="252" r="4" fill="#00d4aa"/>
+      <text x="435" y="256" font-family="Share Tech Mono,monospace" font-size="8" fill="#00d4aa">GPIO14 → P4</text>
+
+      <!-- ══ ULN2003 ══ -->
+      <rect x="512" y="132" width="118" height="222" rx="6" fill="#0d1f1a" stroke="#00d4aa" stroke-width="1.5"/>
+      <text x="571" y="157" text-anchor="middle" font-family="Rajdhani,sans-serif" font-size="13" font-weight="700" fill="#00d4aa">ULN2003</text>
+      <text x="571" y="172" text-anchor="middle" font-family="Share Tech Mono,monospace" font-size="8" fill="#8b949e">Darlington driver</text>
+      <text x="571" y="185" text-anchor="middle" font-family="Share Tech Mono,monospace" font-size="8" fill="#555">(from 28BYJ-48 kit)</text>
+      <!-- IN left -->
+      <circle cx="512" cy="204" r="4" fill="#00d4aa"/>
+      <text x="507" y="201" text-anchor="end" font-family="Share Tech Mono,monospace" font-size="8" fill="#00d4aa">IN1</text>
+      <circle cx="512" cy="224" r="4" fill="#00d4aa"/>
+      <text x="507" y="221" text-anchor="end" font-family="Share Tech Mono,monospace" font-size="8" fill="#00d4aa">IN2</text>
+      <circle cx="512" cy="244" r="4" fill="#00d4aa"/>
+      <text x="507" y="241" text-anchor="end" font-family="Share Tech Mono,monospace" font-size="8" fill="#00d4aa">IN3</text>
+      <circle cx="512" cy="264" r="4" fill="#00d4aa"/>
+      <text x="507" y="261" text-anchor="end" font-family="Share Tech Mono,monospace" font-size="8" fill="#00d4aa">IN4</text>
+      <!-- VCC 12V -->
+      <circle cx="512" cy="292" r="4" fill="#ff4444"/>
+      <text x="507" y="289" text-anchor="end" font-family="Share Tech Mono,monospace" font-size="8" fill="#ff6b6b">VCC (12V)</text>
+      <line x1="512" y1="292" x2="492" y2="292" stroke="#ff4444" stroke-width="1.5"/>
+      <line x1="492" y1="292" x2="492" y2="38" stroke="#ff4444" stroke-width="1.5" stroke-dasharray="4,2"/>
+      <!-- GND -->
+      <circle cx="512" cy="314" r="4" fill="#555"/>
+      <text x="507" y="311" text-anchor="end" font-family="Share Tech Mono,monospace" font-size="8" fill="#888">GND</text>
+      <line x1="512" y1="314" x2="497" y2="314" stroke="#555" stroke-width="1.5"/>
+      <line x1="497" y1="314" x2="497" y2="445" stroke="#555" stroke-width="1.5"/>
+      <!-- PIN5 unused -->
+      <rect x="514" y="326" width="62" height="14" rx="2" fill="#111" stroke="#2a2a2a"/>
+      <text x="545" y="337" text-anchor="middle" font-family="Share Tech Mono,monospace" font-size="7" fill="#333">PIN5 — unused</text>
+      <!-- OUT right (pump −) -->
+      <circle cx="630" cy="204" r="4" fill="#555"/>
+      <text x="635" y="208" font-family="Share Tech Mono,monospace" font-size="8" fill="#aaa">OUT1 → P1 −</text>
+      <circle cx="630" cy="224" r="4" fill="#555"/>
+      <text x="635" y="228" font-family="Share Tech Mono,monospace" font-size="8" fill="#aaa">OUT2 → P2 −</text>
+      <circle cx="630" cy="244" r="4" fill="#555"/>
+      <text x="635" y="248" font-family="Share Tech Mono,monospace" font-size="8" fill="#aaa">OUT3 → P3 −</text>
+      <circle cx="630" cy="264" r="4" fill="#555"/>
+      <text x="635" y="268" font-family="Share Tech Mono,monospace" font-size="8" fill="#aaa">OUT4 → P4 −</text>
+
+      <!-- Signal wires GPIO → IN (dashed teal) -->
+      <line x1="474" y1="192" x2="508" y2="204" stroke="#00d4aa" stroke-width="1.5" stroke-dasharray="5,3"/>
+      <line x1="474" y1="212" x2="508" y2="224" stroke="#00d4aa" stroke-width="1.5" stroke-dasharray="5,3"/>
+      <line x1="474" y1="232" x2="508" y2="244" stroke="#00d4aa" stroke-width="1.5" stroke-dasharray="5,3"/>
+      <line x1="474" y1="252" x2="508" y2="264" stroke="#00d4aa" stroke-width="1.5" stroke-dasharray="5,3"/>
+
+      <!-- ══ PUMPS ══ -->
+      <!-- Pump 1 -->
+      <rect x="688" y="55" width="82" height="46" rx="5" fill="#151c2a" stroke="#ff6b6b" stroke-width="1.2"/>
+      <text x="729" y="74" text-anchor="middle" font-family="Rajdhani,sans-serif" font-size="11" font-weight="700" fill="#ff6b6b">PUMP 1</text>
+      <text x="729" y="90" text-anchor="middle" font-family="Share Tech Mono,monospace" font-size="8" fill="#8b949e">KG · 12V DC</text>
+      <text x="685" y="69" text-anchor="end" font-family="Share Tech Mono,monospace" font-size="9" fill="#ff4444">+</text>
+      <text x="685" y="84" text-anchor="end" font-family="Share Tech Mono,monospace" font-size="9" fill="#777">−</text>
+      <line x1="686" y1="67" x2="728" y2="67" stroke="#ff4444" stroke-width="1.5"/>
+      <line x1="728" y1="67" x2="728" y2="38" stroke="#ff4444" stroke-width="1.5"/>
+      <line x1="686" y1="82" x2="634" y2="204" stroke="#555" stroke-width="1.5"/>
+
+      <!-- Pump 2 -->
+      <rect x="688" y="120" width="82" height="46" rx="5" fill="#151c2a" stroke="#ff6b6b" stroke-width="1.2"/>
+      <text x="729" y="139" text-anchor="middle" font-family="Rajdhani,sans-serif" font-size="11" font-weight="700" fill="#ff6b6b">PUMP 2</text>
+      <text x="729" y="155" text-anchor="middle" font-family="Share Tech Mono,monospace" font-size="8" fill="#8b949e">CA · 12V DC</text>
+      <text x="685" y="134" text-anchor="end" font-family="Share Tech Mono,monospace" font-size="9" fill="#ff4444">+</text>
+      <text x="685" y="149" text-anchor="end" font-family="Share Tech Mono,monospace" font-size="9" fill="#777">−</text>
+      <line x1="686" y1="132" x2="728" y2="132" stroke="#ff4444" stroke-width="1.5"/>
+      <line x1="728" y1="132" x2="728" y2="67" stroke="#ff4444" stroke-width="1.5"/>
+      <line x1="686" y1="147" x2="634" y2="224" stroke="#555" stroke-width="1.5"/>
+
+      <!-- Pump 3 -->
+      <rect x="688" y="188" width="82" height="46" rx="5" fill="#151c2a" stroke="#ff6b6b" stroke-width="1.2"/>
+      <text x="729" y="207" text-anchor="middle" font-family="Rajdhani,sans-serif" font-size="11" font-weight="700" fill="#ff6b6b">PUMP 3</text>
+      <text x="729" y="223" text-anchor="middle" font-family="Share Tech Mono,monospace" font-size="8" fill="#8b949e">MG · 12V DC</text>
+      <text x="685" y="202" text-anchor="end" font-family="Share Tech Mono,monospace" font-size="9" fill="#ff4444">+</text>
+      <text x="685" y="217" text-anchor="end" font-family="Share Tech Mono,monospace" font-size="9" fill="#777">−</text>
+      <line x1="686" y1="200" x2="728" y2="200" stroke="#ff4444" stroke-width="1.5"/>
+      <line x1="728" y1="200" x2="728" y2="132" stroke="#ff4444" stroke-width="1.5"/>
+      <line x1="686" y1="215" x2="634" y2="244" stroke="#555" stroke-width="1.5"/>
+
+      <!-- Pump 4 -->
+      <rect x="688" y="256" width="82" height="46" rx="5" fill="#151c2a" stroke="#ff6b6b" stroke-width="1.2"/>
+      <text x="729" y="275" text-anchor="middle" font-family="Rajdhani,sans-serif" font-size="11" font-weight="700" fill="#ff6b6b">PUMP 4</text>
+      <text x="729" y="291" text-anchor="middle" font-family="Share Tech Mono,monospace" font-size="8" fill="#8b949e">P4 · 12V DC</text>
+      <text x="685" y="270" text-anchor="end" font-family="Share Tech Mono,monospace" font-size="9" fill="#ff4444">+</text>
+      <text x="685" y="285" text-anchor="end" font-family="Share Tech Mono,monospace" font-size="9" fill="#777">−</text>
+      <line x1="686" y1="268" x2="728" y2="268" stroke="#ff4444" stroke-width="1.5"/>
+      <line x1="728" y1="268" x2="728" y2="200" stroke="#ff4444" stroke-width="1.5"/>
+      <line x1="686" y1="283" x2="634" y2="264" stroke="#555" stroke-width="1.5"/>
+
+      <!-- Title block -->
+      <rect x="22" y="462" width="360" height="36" rx="5" fill="#0d1117" stroke="#30363d"/>
+      <text x="32" y="476" font-family="Share Tech Mono,monospace" font-size="8" fill="#555">DIY MY DOSE · Rev 1.0 · v0.9.9 · github.com/diymoica/DMdose</text>
+      <text x="32" y="490" font-family="Share Tech Mono,monospace" font-size="8" fill="#444">Wiring based on joy-reef.com · ESP32 + ULN2003 + LM2596</text>
+    </svg>
+  </div>
+
+  <!-- ═══ SIDEBAR ═══ -->
+  <div class="sidebar">
+
+    <!-- Credit -->
+    <div class="credit">
+      <strong>
+        <span data-lang="en" class="visible">📐 Wiring Credit</span>
+        <span data-lang="fr">📐 Crédit du montage</span>
+        <span data-lang="es">📐 Crédito del montaje</span>
+        <span data-lang="de">📐 Schaltungsquelle</span>
+        <span data-lang="it">📐 Credito del cablaggio</span>
+      </strong>
+      <span data-lang="en" class="visible">
+        This wiring design is based on the work published on
+        <a href="https://joy-reef.com" target="_blank">joy-reef.com</a>.
+        Full credit and thanks to the joy-reef team.
+      </span>
+      <span data-lang="fr">
+        Ce montage électronique est basé sur les travaux publiés sur
+        <a href="https://joy-reef.com" target="_blank">joy-reef.com</a>.
+        Tous les crédits et remerciements à l'équipe joy-reef.
+      </span>
+      <span data-lang="es">
+        Este diseño de cableado está basado en el trabajo publicado en
+        <a href="https://joy-reef.com" target="_blank">joy-reef.com</a>.
+        Todo el crédito y agradecimiento al equipo de joy-reef.
+      </span>
+      <span data-lang="de">
+        Dieses Schaltungsdesign basiert auf den Arbeiten von
+        <a href="https://joy-reef.com" target="_blank">joy-reef.com</a>.
+        Voller Dank und Anerkennung an das joy-reef Team.
+      </span>
+      <span data-lang="it">
+        Questo schema di cablaggio si basa sul lavoro pubblicato su
+        <a href="https://joy-reef.com" target="_blank">joy-reef.com</a>.
+        Tutti i crediti e i ringraziamenti al team di joy-reef.
+      </span>
+    </div>
+
+    <!-- Wire legend -->
+    <div class="card">
+      <h3>
+        <span data-lang="en" class="visible">Wire Legend</span>
+        <span data-lang="fr">Légende des fils</span>
+        <span data-lang="es">Leyenda de cables</span>
+        <span data-lang="de">Leitungslegende</span>
+        <span data-lang="it">Legenda cavi</span>
+      </h3>
+      <div class="legend-item"><div class="wire" style="background:#ff4444"></div>
+        <span>
+          <span data-lang="en" class="visible">12V — Power positive</span>
+          <span data-lang="fr">12V — Alimentation positive</span>
+          <span data-lang="es">12V — Alimentación positiva</span>
+          <span data-lang="de">12V — Stromversorgung positiv</span>
+          <span data-lang="it">12V — Alimentazione positiva</span>
+        </span>
+      </div>
+      <div class="legend-item"><div class="wire" style="background:#555"></div>
+        <span>
+          <span data-lang="en" class="visible">GND — Ground / switched negative</span>
+          <span data-lang="fr">GND — Masse / négatif commuté</span>
+          <span data-lang="es">GND — Masa / negativo conmutado</span>
+          <span data-lang="de">GND — Masse / geschaltetes Minus</span>
+          <span data-lang="it">GND — Massa / negativo commutato</span>
+        </span>
+      </div>
+      <div class="legend-item"><div class="wire" style="background:#f77f00"></div>
+        <span>
+          <span data-lang="en" class="visible">5V — ESP32 logic power (from LM2596)</span>
+          <span data-lang="fr">5V — Alimentation logique ESP32 (via LM2596)</span>
+          <span data-lang="es">5V — Alimentación lógica ESP32 (desde LM2596)</span>
+          <span data-lang="de">5V — ESP32 Logikversorgung (über LM2596)</span>
+          <span data-lang="it">5V — Alimentazione logica ESP32 (tramite LM2596)</span>
+        </span>
+      </div>
+      <div class="legend-item"><div class="wire-dashed"></div>
+        <span>
+          <span data-lang="en" class="visible">Signal GPIO (logic level 3.3V)</span>
+          <span data-lang="fr">Signal GPIO (niveau logique 3.3V)</span>
+          <span data-lang="es">Señal GPIO (nivel lógico 3.3V)</span>
+          <span data-lang="de">GPIO-Signal (Logikpegel 3.3V)</span>
+          <span data-lang="it">Segnale GPIO (livello logico 3.3V)</span>
+        </span>
+      </div>
+    </div>
+
+    <!-- GPIO table -->
+    <div class="card">
+      <h3>GPIO Mapping (ESPHome)</h3>
+      <table>
+        <thead>
+          <tr>
+            <th>GPIO</th>
+            <th>ULN2003</th>
+            <th>
+              <span data-lang="en" class="visible">Pump</span>
+              <span data-lang="fr">Pompe</span>
+              <span data-lang="es">Bomba</span>
+              <span data-lang="de">Pumpe</span>
+              <span data-lang="it">Pompa</span>
+            </th>
+            <th>
+              <span data-lang="en" class="visible">Liquid</span>
+              <span data-lang="fr">Liquide</span>
+              <span data-lang="es">Líquido</span>
+              <span data-lang="de">Flüssigkeit</span>
+              <span data-lang="it">Liquido</span>
+            </th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr><td><span class="badge g">GPIO27</span></td><td>IN1 → OUT1</td><td>P1</td><td>KG</td></tr>
+          <tr><td><span class="badge g">GPIO12</span></td><td>IN2 → OUT2</td><td>P2</td><td>CA</td></tr>
+          <tr><td><span class="badge g">GPIO13</span></td><td>IN3 → OUT3</td><td>P3</td><td>MG</td></tr>
+          <tr><td><span class="badge g">GPIO14</span></td><td>IN4 → OUT4</td><td>P4</td><td>P4</td></tr>
+          <tr><td><span class="badge o">VIN</span></td><td colspan="3">LM2596 OUT+ → 5V</td></tr>
+          <tr><td><span class="badge k">GND</span></td><td colspan="3">
+            <span data-lang="en" class="visible">Common GND bus</span>
+            <span data-lang="fr">Bus GND commun</span>
+            <span data-lang="es">Bus GND común</span>
+            <span data-lang="de">Gemeinsamer GND-Bus</span>
+            <span data-lang="it">Bus GND comune</span>
+          </td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Power supply recommendation -->
+    <div class="psu">
+      <strong>
+        <span data-lang="en" class="visible">⚡ Recommended Power Supply</span>
+        <span data-lang="fr">⚡ Alimentation recommandée</span>
+        <span data-lang="es">⚡ Fuente de alimentación recomendada</span>
+        <span data-lang="de">⚡ Empfohlene Stromversorgung</span>
+        <span data-lang="it">⚡ Alimentatore consigliato</span>
+      </strong>
+      <p style="font-size:0.78rem;color:#8b949e;margin-bottom:10px;">
+        <span data-lang="en" class="visible">One 12V supply powers everything. The LM2596 steps down to 5V for the ESP32 only. ULN2003 and pumps run directly at 12V.</span>
+        <span data-lang="fr">Une seule alimentation 12V suffit. Le LM2596 abaisse à 5V pour l'ESP32 uniquement. L'ULN2003 et les pompes tournent directement en 12V.</span>
+        <span data-lang="es">Una sola fuente de 12V alimenta todo. El LM2596 reduce a 5V solo para el ESP32. El ULN2003 y las bombas funcionan directamente a 12V.</span>
+        <span data-lang="de">Ein 12V-Netzteil versorgt alles. Der LM2596 wandelt auf 5V nur für den ESP32 um. ULN2003 und Pumpen laufen direkt mit 12V.</span>
+        <span data-lang="it">Un solo alimentatore 12V alimenta tutto. L'LM2596 abbassa a 5V solo per l'ESP32. ULN2003 e pompe funzionano direttamente a 12V.</span>
+      </p>
+      <div class="psu-opt">
+        <span>
+          <span data-lang="en" class="visible">4 standard DC pumps</span>
+          <span data-lang="fr">4 pompes DC standard</span>
+          <span data-lang="es">4 bombas DC estándar</span>
+          <span data-lang="de">4 Standard DC-Pumpen</span>
+          <span data-lang="it">4 pompe DC standard</span>
+        </span>
+        <span><strong>12V · 2A</strong> <span class="tag tag-rec">✓ Standard</span></span>
+      </div>
+      <div class="psu-opt">
+        <span>4× Kamoer NKP 12V</span>
+        <span><strong>12V · 3A</strong> <span class="tag tag-ok">Premium</span></span>
+      </div>
+      <div class="psu-opt">
+        <span>4× Kamoer stepper</span>
+        <span><strong>12V · 5A</strong> <span class="tag tag-ok">Luxe</span></span>
+      </div>
+      <p class="psu-note">
+        <span data-lang="en" class="visible">Use a regulated DC adapter with a 5.5×2.1mm barrel jack. Add 20–30% current headroom.</span>
+        <span data-lang="fr">Utiliser un adaptateur DC régulé avec jack baril 5.5×2.1mm. Prévoir 20–30% de marge sur le courant.</span>
+        <span data-lang="es">Usar un adaptador DC regulado con conector barril 5.5×2.1mm. Añadir 20–30% de margen de corriente.</span>
+        <span data-lang="de">Geregeltes Netzteil mit 5.5×2.1mm Hohlstecker verwenden. 20–30% Stromreserve einplanen.</span>
+        <span data-lang="it">Usare un adattatore DC regolato con jack barrel 5.5×2.1mm. Aggiungere 20–30% di margine di corrente.</span>
+      </p>
+    </div>
+
+    <!-- BOM -->
+    <div class="card">
+      <h3>
+        <span data-lang="en" class="visible">Bill of Materials</span>
+        <span data-lang="fr">Liste des composants</span>
+        <span data-lang="es">Lista de materiales</span>
+        <span data-lang="de">Stückliste</span>
+        <span data-lang="it">Lista dei componenti</span>
+      </h3>
+      <div class="bom-item">
+        <div>
+          <div>ESP32 WR-32 Dev Board</div>
+          <div class="bom-ref">USB-C · CH340C · 38 pins</div>
+        </div>
+        <div class="bom-qty">×1</div>
+      </div>
+      <div class="bom-item">
+        <div>
+          <div>ULN2003 Driver Board</div>
+          <div class="bom-ref">
+            <span data-lang="en" class="visible">From 28BYJ-48 stepper kit · PIN5 unused</span>
+            <span data-lang="fr">Issu du kit stepper 28BYJ-48 · PIN5 inutilisé</span>
+            <span data-lang="es">Del kit stepper 28BYJ-48 · PIN5 sin usar</span>
+            <span data-lang="de">Aus dem 28BYJ-48 Schrittmotor-Kit · PIN5 ungenutzt</span>
+            <span data-lang="it">Dal kit stepper 28BYJ-48 · PIN5 non utilizzato</span>
+          </div>
+        </div>
+        <div class="bom-qty">×1</div>
+      </div>
+      <div class="bom-item">
+        <div>
+          <div>LM2596 DC-DC Buck</div>
+          <div class="bom-ref">
+            <span data-lang="en" class="visible">⚠ Adjust to 5V before connecting ESP32</span>
+            <span data-lang="fr">⚠ Régler à 5V avant de brancher l'ESP32</span>
+            <span data-lang="es">⚠ Ajustar a 5V antes de conectar el ESP32</span>
+            <span data-lang="de">⚠ Vor ESP32-Anschluss auf 5V einstellen</span>
+            <span data-lang="it">⚠ Regolare a 5V prima di collegare l'ESP32</span>
+          </div>
+        </div>
+        <div class="bom-qty">×1</div>
+      </div>
+      <div class="bom-item">
+        <div>
+          <div>
+            <span data-lang="en" class="visible">12V DC Peristaltic Pump</span>
+            <span data-lang="fr">Pompe péristaltique 12V DC</span>
+            <span data-lang="es">Bomba peristáltica 12V DC</span>
+            <span data-lang="de">12V DC Peristaltikpumpe</span>
+            <span data-lang="it">Pompa peristaltica 12V DC</span>
+          </div>
+          <div class="bom-ref">
+            <span data-lang="en" class="visible">Brushed DC · 2 wires</span>
+            <span data-lang="fr">DC brushed · 2 fils</span>
+            <span data-lang="es">DC brushed · 2 cables</span>
+            <span data-lang="de">Bürstenmotor DC · 2 Drähte</span>
+            <span data-lang="it">DC brushed · 2 fili</span>
+          </div>
+        </div>
+        <div class="bom-qty">×4</div>
+      </div>
+      <div class="bom-item">
+        <div>
+          <div>
+            <span data-lang="en" class="visible">12V DC Power Supply</span>
+            <span data-lang="fr">Alimentation 12V DC</span>
+            <span data-lang="es">Fuente de alimentación 12V DC</span>
+            <span data-lang="de">12V DC Netzteil</span>
+            <span data-lang="it">Alimentatore 12V DC</span>
+          </div>
+          <div class="bom-ref">
+            <span data-lang="en" class="visible">Min. 2A · barrel jack 5.5×2.1mm</span>
+            <span data-lang="fr">Min. 2A · jack baril 5.5×2.1mm</span>
+            <span data-lang="es">Mín. 2A · conector barril 5.5×2.1mm</span>
+            <span data-lang="de">Min. 2A · Hohlstecker 5.5×2.1mm</span>
+            <span data-lang="it">Min. 2A · jack barrel 5.5×2.1mm</span>
+          </div>
+        </div>
+        <div class="bom-qty">×1</div>
+      </div>
+    </div>
+
+    <!-- Warning -->
+    <div class="warn">
+      <strong>⚠
+        <span data-lang="en" class="visible">Important</span>
+        <span data-lang="fr">Important</span>
+        <span data-lang="es">Importante</span>
+        <span data-lang="de">Wichtig</span>
+        <span data-lang="it">Importante</span>
+      </strong>
+      <span data-lang="en" class="visible">
+        Adjust the LM2596 to <strong>exactly 5V</strong> before connecting the ESP32 — overvoltage destroys it instantly.<br><br>
+        The ULN2003 switches the <strong>negative wire</strong> of each pump. Each pump's positive wire connects to the common 12V bus. PIN5 on the board is the original stepper connector — leave it unconnected.
+      </span>
+      <span data-lang="fr">
+        Régler le LM2596 à <strong>exactement 5V</strong> avant de brancher l'ESP32 — une surtension le détruit instantanément.<br><br>
+        L'ULN2003 commute le <strong>fil négatif</strong> de chaque pompe. Le fil positif de chaque pompe est connecté au bus 12V commun. Le PIN5 de la carte est le connecteur stepper d'origine — le laisser déconnecté.
+      </span>
+      <span data-lang="es">
+        Ajustar el LM2596 a <strong>exactamente 5V</strong> antes de conectar el ESP32 — el sobrevoltaje lo destruye instantáneamente.<br><br>
+        El ULN2003 conmuta el <strong>cable negativo</strong> de cada bomba. El cable positivo de cada bomba se conecta al bus 12V común. El PIN5 de la placa es el conector stepper original — dejarlo desconectado.
+      </span>
+      <span data-lang="de">
+        LM2596 auf <strong>genau 5V</strong> einstellen, bevor der ESP32 angeschlossen wird — Überspannung zerstört ihn sofort.<br><br>
+        Der ULN2003 schaltet den <strong>Minusdraht</strong> jeder Pumpe. Der Plusdraht jeder Pumpe ist mit dem gemeinsamen 12V-Bus verbunden. PIN5 auf der Platine ist der originale Schrittmotor-Anschluss — nicht anschließen.
+      </span>
+      <span data-lang="it">
+        Regolare l'LM2596 a <strong>esattamente 5V</strong> prima di collegare l'ESP32 — la sovratensione lo distrugge istantaneamente.<br><br>
+        L'ULN2003 commuta il <strong>filo negativo</strong> di ogni pompa. Il filo positivo di ogni pompa si collega al bus 12V comune. Il PIN5 sulla scheda è il connettore stepper originale — lasciarlo scollegato.
+      </span>
+    </div>
+
+  </div><!-- /sidebar -->
+</div><!-- /layout -->
+
+<script>
+function setLang(lang) {
+  // Buttons
+  document.querySelectorAll('.lang-btn').forEach(b => b.classList.remove('active'));
+  event.target.classList.add('active');
+
+  // All translatable elements
+  document.querySelectorAll('[data-lang]').forEach(el => {
+    el.classList.toggle('visible', el.getAttribute('data-lang') === lang);
+  });
+}
+// Init: show EN on load
+document.querySelectorAll('[data-lang="en"]').forEach(el => el.classList.add('visible'));
+</script>
+
+</body>
+</html>
