@@ -12,11 +12,41 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/) and [Se
 
 ## [0.9.9]
 
+### Fixed
+- **Critical : `seconds: "00"` in time_pattern corrupted HA automation cache after simulation**
+  - Symptom : automation fires but pump never doses — error `Cannot read properties of undefined`
+  - Fix : `seconds` parameter removed from all 4 auto dosing automations
+- **Compatibility matrix bypassed at H:00**
+  - Root cause : all pumps triggered simultaneously at top of hour
+  - Fix : matrix removed from automation conditions — offset system handles sequencing exclusively
+- **Offset not applied to auto dosing timing**
+  - `dmd_pX_offset_min` was wired to "Missed dose" automations only, not "Auto dosing"
+  - Fix : offset now integrated into timing condition of all 4 auto dosing automations
+- **Global dose delay causing unpredictable sequencing**
+  - Fixed delay in minutes caused drift and conflicts with matrix
+  - Fix : replaced by a short configurable mechanical delay in seconds (default 5s)
+- **Dose lock `dmd_dosing` stuck ON after HA restart**
+  - Fix : `Reset dose lock on startup` automation added
+- **Calibration duration wrong for Pump 3 and Pump 4**
+  - Fix : calibration script corrected to 60s for all pumps
+- **Simulation sub-options still visible when simulation is OFF**
+  - Fix : conditional visibility added — sub-options hidden when sim_mode = OFF
+- **Simulation options not reset when simulation turns OFF**
+  - Fix : automation added to reset all sim options when sim_mode goes OFF
+
+### Added
+- Automatic offset calculation from compatibility matrix (`dmd_auto_calculate_offsets`)
+- Automatic `automation.reload` when simulation mode turns OFF — clears time_pattern cache transparently
+- Mechanical delay between doses now configurable (1–30s, default 5s) — `input_number.dmd_dose_delay`
+- Notification test button in Settings → Global
+- Startup checklist card in Settings tab
+- Push notifications configured and tested (mobile companion app)
+
 ### Changed
 - Project renamed from **ReefDose** to **DIY my Dose (DmD)** — avoid confusion with Red Sea's trademarked ReefDose product
 - All HA entities renamed from `rd_` prefix to `dmd_` prefix
 - All files renamed from `rd_*.yaml` to `dmd_*.yaml`
-- ESPHome device references updated from `reefdose` to `dmd`
+- ESPHome device renamed from `reefdose` to `dmd` (`friendly_name: DIY my Dose`)
 
 ---
 
@@ -216,11 +246,41 @@ Format basé sur [Keep a Changelog](https://keepachangelog.com/en/1.0.0/) et [Se
 
 ## [0.9.9]
 
+### Corrigé
+- **Critique : `seconds: "00"` dans time_pattern corrompait le cache HA après simulation**
+  - Symptôme : l'automation se déclenche mais la pompe ne dose pas — erreur `Cannot read properties of undefined`
+  - Correction : paramètre `seconds` retiré des 4 automations de dosage automatique
+- **Matrice de compatibilité contournée à H:00**
+  - Cause : toutes les pompes se déclenchaient simultanément en début d'heure
+  - Correction : matrice retirée des conditions — le système d'offsets gère exclusivement le séquençage
+- **Offset non appliqué au timing du dosage automatique**
+  - `dmd_pX_offset_min` était câblé aux automations "Dose manquée" uniquement, pas "Auto dosing"
+  - Correction : offset intégré dans la condition de timing des 4 automations de dosage automatique
+- **Délai global causant un séquençage imprévisible**
+  - Le délai fixe en minutes causait des dérives et conflits avec la matrice
+  - Correction : remplacé par un court délai mécanique configurable en secondes (défaut 5s)
+- **Verrou de dose `dmd_dosing` bloqué ON après redémarrage HA**
+  - Correction : automation `Reset dose lock on startup` ajoutée
+- **Durée de calibration incorrecte pour les pompes 3 et 4**
+  - Correction : script de calibration corrigé à 60s pour toutes les pompes
+- **Sous-options simulation visibles alors que la simulation est OFF**
+  - Correction : visibilité conditionnelle ajoutée — sous-options masquées quand sim_mode = OFF
+- **Options simulation non réinitialisées quand la simulation passe à OFF**
+  - Correction : automation ajoutée pour réinitialiser toutes les options sim quand sim_mode = OFF
+
+### Ajouté
+- Calcul automatique des offsets depuis la matrice de compatibilité (`dmd_auto_calculate_offsets`)
+- `automation.reload` automatique quand le mode simulation se désactive — efface le cache time_pattern de manière transparente
+- Délai mécanique entre doses configurable (1–30s, défaut 5s) — `input_number.dmd_dose_delay`
+- Bouton de test notification dans Réglages → Global
+- Checklist de démarrage dans l'onglet Réglages
+- Notifications push configurées et testées (app compagnon mobile)
+
 ### Modifié
 - Projet renommé de **ReefDose** à **DIY my Dose (DmD)** — éviter la confusion avec le produit ReefDose de Red Sea (marque déposée)
 - Toutes les entités HA renommées du préfixe `rd_` vers `dmd_`
 - Tous les fichiers renommés de `rd_*.yaml` vers `dmd_*.yaml`
-- Références ESPHome mises à jour de `reefdose` vers `dmd`
+- ESPHome renommé de `reefdose` vers `dmd` (`friendly_name: DIY my Dose`)
 
 ---
 
