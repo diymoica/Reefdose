@@ -1,4 +1,4 @@
-# Changelog — ReefDose
+# Changelog — DIY my Dose
 
 All notable changes to this project are documented here.
 Format based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/) and [Semantic Versioning](https://semver.org/)
@@ -7,6 +7,16 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/) and [Se
 - **MAJOR** — complete rewrite or breaking architecture change
 - **MINOR** — significant new feature (new capability, new section, new mode)
 - **PATCH** — bug fix, minor improvement, text/label/icon change, translation update
+
+---
+
+## [0.9.9]
+
+### Changed
+- Project renamed from **ReefDose** to **DIY my Dose (DmD)** — avoid confusion with Red Sea's trademarked ReefDose product
+- All HA entities renamed from `rd_` prefix to `dmd_` prefix
+- All files renamed from `rd_*.yaml` to `dmd_*.yaml`
+- ESPHome device references updated from `reefdose` to `dmd`
 
 ---
 
@@ -21,7 +31,7 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/) and [Se
   - Root cause : all pumps triggered simultaneously — matrix checked elapsed time since previous cycle
   - Fix : matrix removed from automation conditions — offset system handles sequencing
 - **Offset not applied to auto dosing timing**
-  - `rd_pX_offset_min` was only wired to "Missed dose" automations, not "Auto dosing"
+  - `dmd_pX_offset_min` was only wired to "Missed dose" automations, not "Auto dosing"
   - Fix : offset now integrated into timing condition of all 4 auto dosing automations
 - **Global dose delay causing unpredictable sequencing**
   - Fixed delay in minutes caused drift and made the matrix unreliable
@@ -30,9 +40,9 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/) and [Se
   - Fix : `show_header_toggle: false` added to Global card
 
 ### Added
-- Automatic offset calculation from compatibility matrix (`rd_auto_calculate_offsets`)
+- Automatic offset calculation from compatibility matrix (`dmd_auto_calculate_offsets`)
 - Automatic `automation.reload` when simulation mode turns OFF
-- Mechanical delay between doses now configurable (1–30s, default 5s) — `input_number.rd_dose_delay`
+- Mechanical delay between doses now configurable (1–30s, default 5s) — `input_number.dmd_dose_delay`
 - Notification test button in Settings → Global
 - Startup checklist card in Settings tab
 - Simulation sub-options auto-hide when simulation is OFF
@@ -43,9 +53,9 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/) and [Se
 ## [0.9.7]
 
 ### Added
-- Simulation mode (`input_boolean.rd_sim_mode`)
+- Simulation mode (`input_boolean.dmd_sim_mode`)
   - Configurable interval (1–10 min)
-  - Real pump toggle (`input_boolean.rd_sim_real_pumps`)
+  - Real pump toggle (`input_boolean.dmd_sim_real_pumps`)
   - Stats fully protected — counters, tank volumes and totals not modified
   - `last_dose` timestamp still updates for timing verification
   - Red warning banner on Control dashboard when active
@@ -63,7 +73,7 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/) and [Se
   - Root cause : empty message in Pump 4 alert caused YAML parser to discard 4 automations
 - Timezone error when comparing last dose timestamp
   - `strptime()` replaced with `as_datetime().replace(tzinfo=now().tzinfo)` (16 occurrences)
-- Duplicate entity definitions between `rd_config.yaml` and `rd_stat.yaml`
+- Duplicate entity definitions between `dmd_config.yaml` and `dmd_stat.yaml`
 - Status icon always red regardless of pump state
 - "Dosing in progress" indicator not tappable — no way to reset stuck dose lock
 
@@ -80,7 +90,7 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/) and [Se
 ## [0.9.4]
 
 ### Added
-- Full day mode per pump (`input_boolean.rd_pX_full_day`)
+- Full day mode per pump (`input_boolean.dmd_pX_full_day`)
   - ON : doses spread across 24h, aligned to clock hours
   - OFF : custom window with start/end time
 - Tank refilled scripts (were missing, caused errors)
@@ -96,8 +106,8 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/) and [Se
 ## [0.9.3]
 
 ### Added
-- Free pump name per pump (`input_text.rd_pX_name`)
-- Manual dose cycle reset option (`input_boolean.rd_pX_manual_resets_cycle`)
+- Free pump name per pump (`input_text.dmd_pX_name`)
+- Manual dose cycle reset option (`input_boolean.dmd_pX_manual_resets_cycle`)
 
 ### Changed
 - Theme CSS variables renamed to universal `p1/p2/p3/p4` scheme
@@ -192,7 +202,7 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/) and [Se
 ---
 ---
 
-# Journal des modifications — ReefDose
+# Journal des modifications — DIY my Dose
 
 Toutes les modifications notables sont documentées ici.
 Format basé sur [Keep a Changelog](https://keepachangelog.com/en/1.0.0/) et [Semantic Versioning](https://semver.org/)
@@ -201,6 +211,16 @@ Format basé sur [Keep a Changelog](https://keepachangelog.com/en/1.0.0/) et [Se
 - **MAJEUR** — réécriture complète ou changement d'architecture cassant
 - **MINEUR** — nouvelle fonctionnalité significative (nouvelle capacité, nouvelle section, nouveau mode)
 - **PATCH** — correction de bug, amélioration mineure, changement de texte/label/icône, traduction
+
+---
+
+## [0.9.9]
+
+### Modifié
+- Projet renommé de **ReefDose** à **DIY my Dose (DmD)** — éviter la confusion avec le produit ReefDose de Red Sea (marque déposée)
+- Toutes les entités HA renommées du préfixe `rd_` vers `dmd_`
+- Tous les fichiers renommés de `rd_*.yaml` vers `dmd_*.yaml`
+- Références ESPHome mises à jour de `reefdose` vers `dmd`
 
 ---
 
@@ -215,7 +235,7 @@ Format basé sur [Keep a Changelog](https://keepachangelog.com/en/1.0.0/) et [Se
   - Cause : toutes les pompes se déclenchaient simultanément
   - Correction : matrice retirée des conditions — le système d'offsets gère le séquençage
 - **Offset non appliqué au timing du dosage automatique**
-  - `rd_pX_offset_min` n'était branché qu'aux automations "Dose manquée"
+  - `dmd_pX_offset_min` n'était branché qu'aux automations "Dose manquée"
   - Correction : offset intégré dans la condition de timing des 4 automations
 - **Délai global causant un séquençage imprévisible**
   - Correction : remplacé par un délai mécanique court configurable en secondes (défaut 5s)
@@ -223,7 +243,7 @@ Format basé sur [Keep a Changelog](https://keepachangelog.com/en/1.0.0/) et [Se
   - Correction : `show_header_toggle: false` ajouté
 
 ### Ajouté
-- Calcul automatique des offsets depuis la matrice (`rd_auto_calculate_offsets`)
+- Calcul automatique des offsets depuis la matrice (`dmd_auto_calculate_offsets`)
 - `automation.reload` automatique à la désactivation du mode simulation
 - Délai mécanique entre doses configurable (1–30s, défaut 5s)
 - Bouton test notifications dans Réglages → Global
@@ -236,9 +256,9 @@ Format basé sur [Keep a Changelog](https://keepachangelog.com/en/1.0.0/) et [Se
 ## [0.9.7]
 
 ### Ajouté
-- Mode simulation (`input_boolean.rd_sim_mode`)
+- Mode simulation (`input_boolean.dmd_sim_mode`)
   - Intervalle configurable (1–10 min)
-  - Toggle pompes réelles (`input_boolean.rd_sim_real_pumps`)
+  - Toggle pompes réelles (`input_boolean.dmd_sim_real_pumps`)
   - Stats entièrement protégées
   - Bannière rouge sur le dashboard Contrôle
 
@@ -252,7 +272,7 @@ Format basé sur [Keep a Changelog](https://keepachangelog.com/en/1.0.0/) et [Se
 ### Corrigé
 - Dosage automatique complètement non-fonctionnel (champ message vide dans alerte P4)
 - Erreur de fuseau horaire lors de la comparaison des timestamps (16 occurrences)
-- Définitions d'entités en double entre `rd_config.yaml` et `rd_stat.yaml`
+- Définitions d'entités en double entre `dmd_config.yaml` et `dmd_stat.yaml`
 - Icône statut toujours rouge peu importe l'état
 - Indicateur "Dose en cours" non cliquable
 
@@ -268,7 +288,7 @@ Format basé sur [Keep a Changelog](https://keepachangelog.com/en/1.0.0/) et [Se
 ## [0.9.4]
 
 ### Ajouté
-- Mode journée entière par pompe (`input_boolean.rd_pX_full_day`)
+- Mode journée entière par pompe (`input_boolean.dmd_pX_full_day`)
 - Scripts "Bidon rempli"
 - Texte explicatif au-dessus de la matrice de compatibilité
 
@@ -282,8 +302,8 @@ Format basé sur [Keep a Changelog](https://keepachangelog.com/en/1.0.0/) et [Se
 ## [0.9.3]
 
 ### Ajouté
-- Nom libre par pompe (`input_text.rd_pX_name`)
-- Option reset de cycle par dose manuelle (`input_boolean.rd_pX_manual_resets_cycle`)
+- Nom libre par pompe (`input_text.dmd_pX_name`)
+- Option reset de cycle par dose manuelle (`input_boolean.dmd_pX_manual_resets_cycle`)
 
 ### Modifié
 - Variables CSS du thème renommées en schéma universel `p1/p2/p3/p4`
