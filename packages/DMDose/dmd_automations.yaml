@@ -1,0 +1,721 @@
+# ============================================================
+#  Copyright (c) 2026 DIY Moi Ca — diymoica.com
+#  License : Custom — personal use only, no commercial use
+#  See LICENSE file at github.com/diymoica/dmd
+# ============================================================
+
+##################################################################################################################################
+#                                                                                                                                #
+#   ESP32 (name: dmd) :                                                                                                    #
+#     switch.dmd_pompe_1  (Kh)      switch.dmd_pompe_2  (Ca)                                                         #
+#     switch.dmd_pompe_3  (Mg)      switch.dmd_pompe_4  (Phyto)                                                      #
+#     binary_sensor.dmd_status                                                                                             #
+#   Notifications : notify.dmd_admin  (defined in packages/common/notify.yaml)                                           #
+##################################################################################################################################
+
+# dmd_automations.yaml — Automations
+
+automation:
+
+  - alias: "DIY my Dose : Reset counters at midnight"
+    id: dmd_reset_daily_counters
+    trigger:
+      - platform: time
+        at: "00:00:00"
+    action:
+      - service: counter.reset
+        target:
+          entity_id:
+            - counter.dmd_p1_daily_count
+            - counter.dmd_p2_daily_count
+            - counter.dmd_p3_daily_count
+            - counter.dmd_p4_daily_count
+
+  - alias: "DIY my Dose : Offline notification"
+    id: dmd_notify_offline
+    trigger:
+      - platform: state
+        entity_id: binary_sensor.dmd_status
+        to: "off"
+        for:
+          minutes: 2
+    action:
+      - service: notify.dmd_admin
+        data:
+          title: "⚠️ DIY my Dose offline"
+          message: "The doser is not responding. Check WiFi connection."
+
+  - alias: "DIY my Dose : Pump 1 tank low alert"
+    id: dmd_alert_tank_p1
+    trigger:
+      - platform: template
+        value_template: >-
+          {{ states('input_number.dmd_p1_tank_remaining') | float(0)
+             <= states('input_number.dmd_p1_alert_threshold') | float(0) }}
+    condition:
+      - condition: template
+        value_template: "{{ states('input_number.dmd_p1_tank_remaining') | float(0) > 0 }}"
+    action:
+      - service: notify.dmd_admin
+        data:
+          title: >-
+            🪣 {{ states('input_text.dmd_p1_name') }} reservoir low
+          message: >-
+            {{ states('input_number.dmd_p1_tank_remaining') | round(0) }} ml remaining ({{ states('sensor.dmd_p1_days_remaining') }} days).
+  - alias: "DIY my Dose : Pump 2 tank low alert"
+    id: dmd_alert_tank_p2
+    trigger:
+      - platform: template
+        value_template: >-
+          {{ states('input_number.dmd_p2_tank_remaining') | float(0)
+             <= states('input_number.dmd_p2_alert_threshold') | float(0) }}
+    condition:
+      - condition: template
+        value_template: "{{ states('input_number.dmd_p2_tank_remaining') | float(0) > 0 }}"
+    action:
+      - service: notify.dmd_admin
+        data:
+          title: >-
+            🪣 {{ states('input_text.dmd_p2_name') }} reservoir low
+          message: >-
+            {{ states('input_number.dmd_p2_tank_remaining') | round(0) }} ml remaining ({{ states('sensor.dmd_p2_days_remaining') }} days).
+  - alias: "DIY my Dose : Pump 3 tank low alert"
+    id: dmd_alert_tank_p3
+    trigger:
+      - platform: template
+        value_template: >-
+          {{ states('input_number.dmd_p3_tank_remaining') | float(0)
+             <= states('input_number.dmd_p3_alert_threshold') | float(0) }}
+    condition:
+      - condition: template
+        value_template: "{{ states('input_number.dmd_p3_tank_remaining') | float(0) > 0 }}"
+    action:
+      - service: notify.dmd_admin
+        data:
+          title: >-
+            🪣 {{ states('input_text.dmd_p3_name') }} reservoir low
+          message: >-
+            {{ states('input_number.dmd_p3_tank_remaining') | round(0) }} ml remaining ({{ states('sensor.dmd_p3_days_remaining') }} days).
+  - alias: "DIY my Dose : Pump 4 tank low alert"
+    id: dmd_alert_tank_p4
+    trigger:
+      - platform: template
+        value_template: >-
+          {{ states('input_number.dmd_p4_tank_remaining') | float(0)
+             <= states('input_number.dmd_p4_alert_threshold') | float(0) }}
+    condition:
+      - condition: template
+        value_template: "{{ states('input_number.dmd_p4_tank_remaining') | float(0) > 0 }}"
+    action:
+      - service: notify.dmd_admin
+        data:
+          title: >-
+            🪣 {{ states('input_text.dmd_p4_name') }} reservoir low
+          message: >-
+            {{ states('input_number.dmd_p4_tank_remaining') | round(0) }} ml remaining ({{ states('sensor.dmd_p4_days_remaining') }} days).
+
+  - alias: "DIY my Dose : Auto dosing Pump 1"
+    id: dmd_auto_dose_p1
+    trigger:
+      - platform: time_pattern
+        minutes: /1
+    condition:
+      - condition: state
+        entity_id: input_boolean.dmd_pause
+        state: "off"
+      - condition: state
+        entity_id: input_boolean.dmd_p1_auto
+        state: "on"
+      - condition: state
+        entity_id: sensor.dmd_status
+        state: "Online"
+      - condition: template
+        value_template: >-
+          {#- Si manual_resets_cycle est ON, vérifier que le délai depuis la dernière dose est >= interval #}
+          {%- if is_state('input_boolean.dmd_p1_manual_resets_cycle', 'on') %}
+            {%- set last = states('input_datetime.dmd_p1_last_dose') %}
+            {%- if last in ['unknown', 'unavailable', 'None'] %}true
+            {%- else %}
+              {%- set sh = state_attr('input_datetime.dmd_p1_start_time', 'hour') | int(0) %}
+              {%- set sm = state_attr('input_datetime.dmd_p1_start_time', 'minute') | int(0) %}
+              {%- set eh = state_attr('input_datetime.dmd_p1_end_time', 'hour') | int(23) %}
+              {%- set em = state_attr('input_datetime.dmd_p1_end_time', 'minute') | int(59) %}
+              {%- set freq = states('input_number.dmd_p1_frequency') | float(1) %}
+              {%- set end_raw = eh * 60 + em %}
+              {%- set end_m = 1440 if end_raw == 0 else end_raw %}
+              {%- set interval = ((end_m - sh * 60 - sm) / freq) | int %}
+              {%- set mins_since = (now() - as_datetime(last).replace(tzinfo=now().tzinfo)).total_seconds() / 60 %}
+              {{ mins_since >= interval }}
+            {%- endif %}
+          {%- else %}true
+          {%- endif %}
+      - condition: template
+        value_template: "{{ states('sensor.dmd_p1_window_ok') == 'OK' }}"
+      - condition: template
+        value_template: >-
+          {%- if is_state('input_boolean.dmd_sim_mode', 'on') %}
+            {{ now().minute % (states('input_number.dmd_sim_interval') | int(2)) == 0 }}
+          {%- else %}
+            {% set freq = states('input_number.dmd_p1_frequency') | float(1) %}
+            {% set now_min = now().hour * 60 + now().minute %}
+            {% set offset = states('input_number.dmd_p1_offset_min') | int(0) %}
+            {% if is_state('input_boolean.dmd_p1_full_day', 'on') %}
+              {% set interval = (1440 / freq) | int %}
+              {{ interval > 0 and (now_min - offset) % interval == 0 and now_min >= offset }}
+            {% else %}
+              {% set sh = state_attr('input_datetime.dmd_p1_start_time', 'hour') | int(0) %}
+              {% set sm = state_attr('input_datetime.dmd_p1_start_time', 'minute') | int(0) %}
+              {% set eh = state_attr('input_datetime.dmd_p1_end_time', 'hour') | int(23) %}
+              {% set em = state_attr('input_datetime.dmd_p1_end_time', 'minute') | int(59) %}
+              {% set start_min = sh * 60 + sm %}
+              {% set end_min_raw = eh * 60 + em %}
+              {% set end_min = 1440 if end_min_raw == 0 else end_min_raw %}
+              {% set interval = ((end_min - start_min) / freq) | int %}
+              {% set diff = now_min - start_min - offset %}
+              {{ diff >= 0 and now_min <= end_min and diff % interval == 0 }}
+            {% endif %}
+          {%- endif %}
+    action:
+      - service: script.dmd_execute_dose
+        data:
+          switch_id: switch.dmd_pompe_1
+          duree_s: "{{ states('sensor.dmd_p1_dose_duration') | int }}"
+          volume_ml: "{{ states('sensor.dmd_p1_dose_volume') | float }}"
+          bidon_entity: input_number.dmd_p1_tank_remaining
+          counter_entity: counter.dmd_p1_daily_count
+          volume_total_entity: input_number.dmd_p1_total_volume
+          doses_total_entity: input_number.dmd_p1_total_doses
+          datetime_entity: input_datetime.dmd_p1_last_dose
+
+  - alias: "DIY my Dose : Auto dosing Pump 2"
+    id: dmd_auto_dose_p2
+    trigger:
+      - platform: time_pattern
+        minutes: /1
+    condition:
+      - condition: state
+        entity_id: input_boolean.dmd_pause
+        state: "off"
+      - condition: state
+        entity_id: input_boolean.dmd_p2_auto
+        state: "on"
+      - condition: state
+        entity_id: sensor.dmd_status
+        state: "Online"
+      - condition: template
+        value_template: >-
+          {#- Si manual_resets_cycle est ON, vérifier que le délai depuis la dernière dose est >= interval #}
+          {%- if is_state('input_boolean.dmd_p2_manual_resets_cycle', 'on') %}
+            {%- set last = states('input_datetime.dmd_p2_last_dose') %}
+            {%- if last in ['unknown', 'unavailable', 'None'] %}true
+            {%- else %}
+              {%- set sh = state_attr('input_datetime.dmd_p2_start_time', 'hour') | int(0) %}
+              {%- set sm = state_attr('input_datetime.dmd_p2_start_time', 'minute') | int(0) %}
+              {%- set eh = state_attr('input_datetime.dmd_p2_end_time', 'hour') | int(23) %}
+              {%- set em = state_attr('input_datetime.dmd_p2_end_time', 'minute') | int(59) %}
+              {%- set freq = states('input_number.dmd_p2_frequency') | float(1) %}
+              {%- set end_raw = eh * 60 + em %}
+              {%- set end_m = 1440 if end_raw == 0 else end_raw %}
+              {%- set interval = ((end_m - sh * 60 - sm) / freq) | int %}
+              {%- set mins_since = (now() - as_datetime(last).replace(tzinfo=now().tzinfo)).total_seconds() / 60 %}
+              {{ mins_since >= interval }}
+            {%- endif %}
+          {%- else %}true
+          {%- endif %}
+      - condition: template
+        value_template: "{{ states('sensor.dmd_p2_window_ok') == 'OK' }}"
+      - condition: template
+        value_template: >-
+          {%- if is_state('input_boolean.dmd_sim_mode', 'on') %}
+            {{ now().minute % (states('input_number.dmd_sim_interval') | int(2)) == 0 }}
+          {%- else %}
+            {% set freq = states('input_number.dmd_p2_frequency') | float(1) %}
+            {% set now_min = now().hour * 60 + now().minute %}
+            {% set offset = states('input_number.dmd_p2_offset_min') | int(0) %}
+            {% if is_state('input_boolean.dmd_p2_full_day', 'on') %}
+              {% set interval = (1440 / freq) | int %}
+              {{ interval > 0 and (now_min - offset) % interval == 0 and now_min >= offset }}
+            {% else %}
+              {% set sh = state_attr('input_datetime.dmd_p2_start_time', 'hour') | int(0) %}
+              {% set sm = state_attr('input_datetime.dmd_p2_start_time', 'minute') | int(0) %}
+              {% set eh = state_attr('input_datetime.dmd_p2_end_time', 'hour') | int(23) %}
+              {% set em = state_attr('input_datetime.dmd_p2_end_time', 'minute') | int(59) %}
+              {% set start_min = sh * 60 + sm %}
+              {% set end_min_raw = eh * 60 + em %}
+              {% set end_min = 1440 if end_min_raw == 0 else end_min_raw %}
+              {% set interval = ((end_min - start_min) / freq) | int %}
+              {% set diff = now_min - start_min - offset %}
+              {{ diff >= 0 and now_min <= end_min and diff % interval == 0 }}
+            {% endif %}
+          {%- endif %}
+    action:
+      - service: script.dmd_execute_dose
+        data:
+          switch_id: switch.dmd_pompe_2
+          duree_s: "{{ states('sensor.dmd_p2_dose_duration') | int }}"
+          volume_ml: "{{ states('sensor.dmd_p2_dose_volume') | float }}"
+          bidon_entity: input_number.dmd_p2_tank_remaining
+          counter_entity: counter.dmd_p2_daily_count
+          volume_total_entity: input_number.dmd_p2_total_volume
+          doses_total_entity: input_number.dmd_p2_total_doses
+          datetime_entity: input_datetime.dmd_p2_last_dose
+
+  - alias: "DIY my Dose : Auto dosing Pump 3"
+    id: dmd_auto_dose_p3
+    trigger:
+      - platform: time_pattern
+        minutes: /1
+    condition:
+      - condition: state
+        entity_id: input_boolean.dmd_pause
+        state: "off"
+      - condition: state
+        entity_id: input_boolean.dmd_p3_auto
+        state: "on"
+      - condition: state
+        entity_id: sensor.dmd_status
+        state: "Online"
+      - condition: template
+        value_template: >-
+          {#- Si manual_resets_cycle est ON, vérifier que le délai depuis la dernière dose est >= interval #}
+          {%- if is_state('input_boolean.dmd_p3_manual_resets_cycle', 'on') %}
+            {%- set last = states('input_datetime.dmd_p3_last_dose') %}
+            {%- if last in ['unknown', 'unavailable', 'None'] %}true
+            {%- else %}
+              {%- set sh = state_attr('input_datetime.dmd_p3_start_time', 'hour') | int(0) %}
+              {%- set sm = state_attr('input_datetime.dmd_p3_start_time', 'minute') | int(0) %}
+              {%- set eh = state_attr('input_datetime.dmd_p3_end_time', 'hour') | int(23) %}
+              {%- set em = state_attr('input_datetime.dmd_p3_end_time', 'minute') | int(59) %}
+              {%- set freq = states('input_number.dmd_p3_frequency') | float(1) %}
+              {%- set end_raw = eh * 60 + em %}
+              {%- set end_m = 1440 if end_raw == 0 else end_raw %}
+              {%- set interval = ((end_m - sh * 60 - sm) / freq) | int %}
+              {%- set mins_since = (now() - as_datetime(last).replace(tzinfo=now().tzinfo)).total_seconds() / 60 %}
+              {{ mins_since >= interval }}
+            {%- endif %}
+          {%- else %}true
+          {%- endif %}
+      - condition: template
+        value_template: "{{ states('sensor.dmd_p3_window_ok') == 'OK' }}"
+      - condition: template
+        value_template: >-
+          {%- if is_state('input_boolean.dmd_sim_mode', 'on') %}
+            {{ now().minute % (states('input_number.dmd_sim_interval') | int(2)) == 0 }}
+          {%- else %}
+            {% set freq = states('input_number.dmd_p3_frequency') | float(1) %}
+            {% set now_min = now().hour * 60 + now().minute %}
+            {% set offset = states('input_number.dmd_p3_offset_min') | int(0) %}
+            {% if is_state('input_boolean.dmd_p3_full_day', 'on') %}
+              {% set interval = (1440 / freq) | int %}
+              {{ interval > 0 and (now_min - offset) % interval == 0 and now_min >= offset }}
+            {% else %}
+              {% set sh = state_attr('input_datetime.dmd_p3_start_time', 'hour') | int(0) %}
+              {% set sm = state_attr('input_datetime.dmd_p3_start_time', 'minute') | int(0) %}
+              {% set eh = state_attr('input_datetime.dmd_p3_end_time', 'hour') | int(23) %}
+              {% set em = state_attr('input_datetime.dmd_p3_end_time', 'minute') | int(59) %}
+              {% set start_min = sh * 60 + sm %}
+              {% set end_min_raw = eh * 60 + em %}
+              {% set end_min = 1440 if end_min_raw == 0 else end_min_raw %}
+              {% set interval = ((end_min - start_min) / freq) | int %}
+              {% set diff = now_min - start_min - offset %}
+              {{ diff >= 0 and now_min <= end_min and diff % interval == 0 }}
+            {% endif %}
+          {%- endif %}
+    action:
+      - service: script.dmd_execute_dose
+        data:
+          switch_id: switch.dmd_pompe_3
+          duree_s: "{{ states('sensor.dmd_p3_dose_duration') | int }}"
+          volume_ml: "{{ states('sensor.dmd_p3_dose_volume') | float }}"
+          bidon_entity: input_number.dmd_p3_tank_remaining
+          counter_entity: counter.dmd_p3_daily_count
+          volume_total_entity: input_number.dmd_p3_total_volume
+          doses_total_entity: input_number.dmd_p3_total_doses
+          datetime_entity: input_datetime.dmd_p3_last_dose
+
+  - alias: "DIY my Dose : Auto dosing Pump 4"
+    id: dmd_auto_dose_p4
+    trigger:
+      - platform: time_pattern
+        minutes: /1
+    condition:
+      - condition: state
+        entity_id: input_boolean.dmd_pause
+        state: "off"
+      - condition: state
+        entity_id: input_boolean.dmd_p4_auto
+        state: "on"
+      - condition: state
+        entity_id: sensor.dmd_status
+        state: "Online"
+      - condition: template
+        value_template: >-
+          {#- Si manual_resets_cycle est ON, vérifier que le délai depuis la dernière dose est >= interval #}
+          {%- if is_state('input_boolean.dmd_p4_manual_resets_cycle', 'on') %}
+            {%- set last = states('input_datetime.dmd_p4_last_dose') %}
+            {%- if last in ['unknown', 'unavailable', 'None'] %}true
+            {%- else %}
+              {%- set sh = state_attr('input_datetime.dmd_p4_start_time', 'hour') | int(0) %}
+              {%- set sm = state_attr('input_datetime.dmd_p4_start_time', 'minute') | int(0) %}
+              {%- set eh = state_attr('input_datetime.dmd_p4_end_time', 'hour') | int(23) %}
+              {%- set em = state_attr('input_datetime.dmd_p4_end_time', 'minute') | int(59) %}
+              {%- set freq = states('input_number.dmd_p4_frequency') | float(1) %}
+              {%- set end_raw = eh * 60 + em %}
+              {%- set end_m = 1440 if end_raw == 0 else end_raw %}
+              {%- set interval = ((end_m - sh * 60 - sm) / freq) | int %}
+              {%- set mins_since = (now() - as_datetime(last).replace(tzinfo=now().tzinfo)).total_seconds() / 60 %}
+              {{ mins_since >= interval }}
+            {%- endif %}
+          {%- else %}true
+          {%- endif %}
+      - condition: template
+        value_template: "{{ states('sensor.dmd_p4_window_ok') == 'OK' }}"
+      - condition: template
+        value_template: >-
+          {%- if is_state('input_boolean.dmd_sim_mode', 'on') %}
+            {{ now().minute % (states('input_number.dmd_sim_interval') | int(2)) == 0 }}
+          {%- else %}
+            {% set freq = states('input_number.dmd_p4_frequency') | float(1) %}
+            {% set now_min = now().hour * 60 + now().minute %}
+            {% set offset = states('input_number.dmd_p4_offset_min') | int(0) %}
+            {% if is_state('input_boolean.dmd_p4_full_day', 'on') %}
+              {% set interval = (1440 / freq) | int %}
+              {{ interval > 0 and (now_min - offset) % interval == 0 and now_min >= offset }}
+            {% else %}
+              {% set sh = state_attr('input_datetime.dmd_p4_start_time', 'hour') | int(0) %}
+              {% set sm = state_attr('input_datetime.dmd_p4_start_time', 'minute') | int(0) %}
+              {% set eh = state_attr('input_datetime.dmd_p4_end_time', 'hour') | int(23) %}
+              {% set em = state_attr('input_datetime.dmd_p4_end_time', 'minute') | int(59) %}
+              {% set start_min = sh * 60 + sm %}
+              {% set end_min_raw = eh * 60 + em %}
+              {% set end_min = 1440 if end_min_raw == 0 else end_min_raw %}
+              {% set interval = ((end_min - start_min) / freq) | int %}
+              {% set diff = now_min - start_min - offset %}
+              {{ diff >= 0 and now_min <= end_min and diff % interval == 0 }}
+            {% endif %}
+          {%- endif %}
+    action:
+      - service: script.dmd_execute_dose
+        data:
+          switch_id: switch.dmd_pompe_4
+          duree_s: "{{ states('sensor.dmd_p4_dose_duration') | int }}"
+          volume_ml: "{{ states('sensor.dmd_p4_dose_volume') | float }}"
+          bidon_entity: input_number.dmd_p4_tank_remaining
+          counter_entity: counter.dmd_p4_daily_count
+          volume_total_entity: input_number.dmd_p4_total_volume
+          doses_total_entity: input_number.dmd_p4_total_doses
+          datetime_entity: input_datetime.dmd_p4_last_dose
+
+  - alias: "DIY my Dose : Missed dose Pump 1"
+    id: dmd_missed_p1
+    trigger:
+      - platform: time_pattern
+        hours: /1
+        seconds: "00"
+    condition:
+      - condition: state
+        entity_id: input_boolean.dmd_p1_auto
+        state: "on"
+      - condition: state
+        entity_id: sensor.dmd_status
+        state: "Offline"
+      - condition: template
+        value_template: >-
+          {% set freq = states('input_number.dmd_p1_frequency') | float(1) %}
+          {{ now().hour % (24 / freq | int) == 0 }}
+      - condition: template
+        value_template: >-
+          {{ now().minute == states('input_number.dmd_p1_offset_min') | int }}
+    action:
+      - service: input_number.set_value
+        target:
+          entity_id: input_number.dmd_p1_missed_doses
+        data:
+          value: "{{ (states('input_number.dmd_p1_missed_doses') | float(0) + 1) | round(0) }}"
+      - service: notify.dmd_admin
+        data:
+          title: >-
+            ❌ {{ states('input_text.dmd_p1_name') }} dose missed
+          message: >-
+            {{ states('input_number.dmd_p4_tank_remaining') | round(0) }} ml remaining ({{ states('sensor.dmd_p4_days_remaining') }} days).
+
+  - alias: "DIY my Dose : Missed dose Pump 2"
+    id: dmd_missed_p2
+    trigger:
+      - platform: time_pattern
+        hours: /1
+        seconds: "00"
+    condition:
+      - condition: state
+        entity_id: input_boolean.dmd_p2_auto
+        state: "on"
+      - condition: state
+        entity_id: sensor.dmd_status
+        state: "Offline"
+      - condition: template
+        value_template: >-
+          {% set freq = states('input_number.dmd_p2_frequency') | float(1) %}
+          {{ now().hour % (24 / freq | int) == 0 }}
+      - condition: template
+        value_template: >-
+          {{ now().minute == states('input_number.dmd_p2_offset_min') | int }}
+    action:
+      - service: input_number.set_value
+        target:
+          entity_id: input_number.dmd_p2_missed_doses
+        data:
+          value: "{{ (states('input_number.dmd_p2_missed_doses') | float(0) + 1) | round(0) }}"
+      - service: notify.dmd_admin
+        data:
+          title: >-
+            ❌ {{ states('input_text.dmd_p2_name') }} dose missed
+          message: >-
+            Automatic dose was not triggered. Check pump status and settings.
+
+  - alias: "DIY my Dose : Missed dose Pump 3"
+    id: dmd_missed_p3
+    trigger:
+      - platform: time_pattern
+        hours: /1
+        seconds: "00"
+    condition:
+      - condition: state
+        entity_id: input_boolean.dmd_p3_auto
+        state: "on"
+      - condition: state
+        entity_id: sensor.dmd_status
+        state: "Offline"
+      - condition: template
+        value_template: >-
+          {% set freq = states('input_number.dmd_p3_frequency') | float(1) %}
+          {{ now().hour % (24 / freq | int) == 0 }}
+      - condition: template
+        value_template: >-
+          {{ now().minute == states('input_number.dmd_p3_offset_min') | int }}
+    action:
+      - service: input_number.set_value
+        target:
+          entity_id: input_number.dmd_p3_missed_doses
+        data:
+          value: "{{ (states('input_number.dmd_p3_missed_doses') | float(0) + 1) | round(0) }}"
+      - service: notify.dmd_admin
+        data:
+          title: >-
+            ❌ {{ states('input_text.dmd_p3_name') }} dose missed
+          message: >-
+            Automatic dose was not triggered. Check pump status and settings.
+
+  - alias: "DIY my Dose : Missed dose Pump 4"
+    id: dmd_missed_p4
+    trigger:
+      - platform: time_pattern
+        hours: /1
+        seconds: "00"
+    condition:
+      - condition: state
+        entity_id: input_boolean.dmd_p4_auto
+        state: "on"
+      - condition: state
+        entity_id: sensor.dmd_status
+        state: "Offline"
+      - condition: template
+        value_template: >-
+          {% set freq = states('input_number.dmd_p4_frequency') | float(1) %}
+          {{ now().hour % (24 / freq | int) == 0 }}
+      - condition: template
+        value_template: >-
+          {{ now().minute == states('input_number.dmd_p4_offset_min') | int }}
+    action:
+      - service: input_number.set_value
+        target:
+          entity_id: input_number.dmd_p4_missed_doses
+        data:
+          value: "{{ (states('input_number.dmd_p4_missed_doses') | float(0) + 1) | round(0) }}"
+      - service: notify.dmd_admin
+        data:
+          title: >-
+            ❌ {{ states('input_text.dmd_p4_name') }} dose missed
+          message: >-
+            Automatic dose was not triggered. Check pump status and settings.
+
+  - alias: "DIY my Dose : Start calibration Pump 1"
+    id: dmd_start_calib_p1
+    trigger:
+      - platform: state
+        entity_id: input_boolean.dmd_p1_calib_start
+        to: "on"
+    condition:
+      - condition: state
+        entity_id: input_boolean.dmd_p1_calib_mode
+        state: "on"
+      - condition: state
+        entity_id: sensor.dmd_status
+        state: "Online"
+    action:
+      - service: script.dmd_calibration_p1
+
+  - alias: "DIY my Dose : Start calibration Pump 2"
+    id: dmd_start_calib_p2
+    trigger:
+      - platform: state
+        entity_id: input_boolean.dmd_p2_calib_start
+        to: "on"
+    condition:
+      - condition: state
+        entity_id: input_boolean.dmd_p2_calib_mode
+        state: "on"
+      - condition: state
+        entity_id: sensor.dmd_status
+        state: "Online"
+    action:
+      - service: script.dmd_calibration_p2
+
+  - alias: "DIY my Dose : Start calibration Pump 3"
+    id: dmd_start_calib_p3
+    trigger:
+      - platform: state
+        entity_id: input_boolean.dmd_p3_calib_start
+        to: "on"
+    condition:
+      - condition: state
+        entity_id: input_boolean.dmd_p3_calib_mode
+        state: "on"
+      - condition: state
+        entity_id: sensor.dmd_status
+        state: "Online"
+    action:
+      - service: script.dmd_calibration_p3
+
+  - alias: "DIY my Dose : Start calibration Pump 4"
+    id: dmd_start_calib_p4
+    trigger:
+      - platform: state
+        entity_id: input_boolean.dmd_p4_calib_start
+        to: "on"
+    condition:
+      - condition: state
+        entity_id: input_boolean.dmd_p4_calib_mode
+        state: "on"
+      - condition: state
+        entity_id: sensor.dmd_status
+        state: "Online"
+    action:
+      - service: script.dmd_calibration_p4
+
+  - alias: "DIY my Dose : Deactivate calib Pump 1 when auto off"
+    id: dmd_auto_deactivate_calib_p1
+    trigger:
+      - platform: state
+        entity_id: input_boolean.dmd_p1_auto
+        to: "off"
+    action:
+      - service: input_boolean.turn_off
+        target:
+          entity_id: input_boolean.dmd_p1_calib_mode
+
+  - alias: "DIY my Dose : Deactivate calib Pump 2 when auto off"
+    id: dmd_auto_deactivate_calib_p2
+    trigger:
+      - platform: state
+        entity_id: input_boolean.dmd_p2_auto
+        to: "off"
+    action:
+      - service: input_boolean.turn_off
+        target:
+          entity_id: input_boolean.dmd_p2_calib_mode
+
+  - alias: "DIY my Dose : Deactivate calib Pump 3 when auto off"
+    id: dmd_auto_deactivate_calib_p3
+    trigger:
+      - platform: state
+        entity_id: input_boolean.dmd_p3_auto
+        to: "off"
+    action:
+      - service: input_boolean.turn_off
+        target:
+          entity_id: input_boolean.dmd_p3_calib_mode
+
+  - alias: "DIY my Dose : Deactivate calib Pump 4 when auto off"
+    id: dmd_auto_deactivate_calib_p4
+    trigger:
+      - platform: state
+        entity_id: input_boolean.dmd_p4_auto
+        to: "off"
+    action:
+      - service: input_boolean.turn_off
+        target:
+          entity_id: input_boolean.dmd_p4_calib_mode
+
+  - alias: "DIY my Dose : Reset dose lock on startup"
+    id: dmd_startup_reset_dosing
+    trigger:
+      - platform: homeassistant
+        event: start
+    action:
+      - service: input_boolean.turn_off
+        target:
+          entity_id: input_boolean.dmd_dosing
+
+  - alias: "DIY my Dose : Reset simulation options when sim mode off"
+    id: dmd_sim_mode_off_reset
+    trigger:
+      - platform: state
+        entity_id: input_boolean.dmd_sim_mode
+        to: "off"
+    action:
+      - service: input_boolean.turn_off
+        target:
+          entity_id: input_boolean.dmd_sim_real_pumps
+      - service: input_number.set_value
+        target:
+          entity_id: input_number.dmd_sim_interval
+        data:
+          value: 3
+      - delay:
+          seconds: 2
+      - service: automation.reload
+
+  - alias: "DIY my Dose : Auto-calculate offsets from compatibility matrix"
+    id: dmd_auto_calculate_offsets
+    trigger:
+      - platform: state
+        entity_id:
+          - input_number.dmd_delay_p1_p2
+          - input_number.dmd_delay_p1_p3
+          - input_number.dmd_delay_p1_p4
+          - input_number.dmd_delay_p2_p3
+          - input_number.dmd_delay_p2_p4
+          - input_number.dmd_delay_p3_p4
+      - platform: homeassistant
+        event: start
+    action:
+      # P1 toujours offset 0
+      - service: input_number.set_value
+        target:
+          entity_id: input_number.dmd_p1_offset_min
+        data:
+          value: 0
+      # P2 offset = délai P1→P2
+      - service: input_number.set_value
+        target:
+          entity_id: input_number.dmd_p2_offset_min
+        data:
+          value: "{{ states('input_number.dmd_delay_p1_p2') | int(0) }}"
+      # P3 offset = max des contraintes réelles (ignorées si délai = 0)
+      - service: input_number.set_value
+        target:
+          entity_id: input_number.dmd_p3_offset_min
+        data:
+          value: >-
+            {% set d13 = states('input_number.dmd_delay_p1_p3') | int(0) %}
+            {% set d23 = states('input_number.dmd_delay_p2_p3') | int(0) %}
+            {% set d12 = states('input_number.dmd_delay_p1_p2') | int(0) %}
+            {% set from_p1 = d13 %}
+            {% set from_p2 = (d23 + d12) if d23 > 0 else 0 %}
+            {{ [from_p1, from_p2] | max }}
+      # P4 offset = délai P1→P4
+      - service: input_number.set_value
+        target:
+          entity_id: input_number.dmd_p4_offset_min
+        data:
+          value: "{{ states('input_number.dmd_delay_p1_p4') | int(0) }}"
