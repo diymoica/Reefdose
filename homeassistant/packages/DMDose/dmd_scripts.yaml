@@ -1,0 +1,283 @@
+# ============================================================
+#  Copyright (c) 2026 DIY Moi Ca — diymoica.com
+#  License : Custom — personal use only, no commercial use
+#  See LICENSE file at github.com/diymoica/dmd
+# ============================================================
+
+##################################################################################################################################
+#                                                                                                                                #
+#   ESP32 (name: dmd) :                                                                                                    #
+#     switch.dmd_pompe_1  (Kh)      switch.dmd_pompe_2  (Ca)                                                         #
+#     switch.dmd_pompe_3  (Mg)      switch.dmd_pompe_4  (Phyto)                                                      #
+#     binary_sensor.dmd_status                                                                                             #
+#   Notifications : notify.dmd_admin  (defined in packages/common/notify.yaml)                                           #
+##################################################################################################################################
+
+# dmd_scripts.yaml — Scripts
+
+script:
+
+  dmd_execute_dose:
+    alias: "DIY my Dose : Execute a dose"
+    mode: queued
+    max: 8
+    sequence:
+      - service: input_boolean.turn_on
+        target:
+          entity_id: input_boolean.dmd_dosing
+      # Trigger real pump only if NOT in simulation mode, OR if sim_real_pumps is ON
+      - choose:
+          - conditions:
+              - condition: template
+                value_template: >-
+                  {{ not is_state('input_boolean.dmd_sim_mode', 'on')
+                     or is_state('input_boolean.dmd_sim_real_pumps', 'on') }}
+            sequence:
+              - service: switch.turn_on
+                target:
+                  entity_id: "{{ switch_id }}"
+              - delay:
+                  seconds: "{{ duree_s | int }}"
+              - service: switch.turn_off
+                target:
+                  entity_id: "{{ switch_id }}"
+        default:
+          # Simulation without real pump — just wait the equivalent duration
+          - delay:
+              seconds: "{{ duree_s | int }}"
+      # Update stats only if NOT in simulation mode
+      - choose:
+          - conditions:
+              - condition: state
+                entity_id: input_boolean.dmd_sim_mode
+                state: "off"
+            sequence:
+              - service: input_number.set_value
+                target:
+                  entity_id: "{{ bidon_entity }}"
+                data:
+                  value: >-
+                    {% set r = states(bidon_entity) | float(0) %}
+                    {{ [r - (volume_ml | float(0)), 0] | max | round(1) }}
+              - service: counter.increment
+                target:
+                  entity_id: "{{ counter_entity }}"
+              - service: input_number.set_value
+                target:
+                  entity_id: "{{ volume_total_entity }}"
+                data:
+                  value: >-
+                    {{ (states(volume_total_entity) | float(0) + (volume_ml | float(0))) | round(1) }}
+              - service: input_number.set_value
+                target:
+                  entity_id: "{{ doses_total_entity }}"
+                data:
+                  value: >-
+                    {{ (states(doses_total_entity) | float(0) + 1) | round(0) }}
+      # Always update last_dose timestamp (useful to verify timing in sim mode)
+      - service: input_datetime.set_datetime
+        target:
+          entity_id: "{{ datetime_entity }}"
+        data:
+          datetime: "{{ now().strftime('%Y-%m-%d %H:%M:%S') }}"
+      - delay:
+          seconds: "{{ states('input_number.dmd_dose_delay') | int(5) }}"
+      - service: input_boolean.turn_off
+        target:
+          entity_id: input_boolean.dmd_dosing
+
+  dmd_manual_dose_p1:
+    alias: "Pump 1 : Manual dose"
+    sequence:
+      - service: script.dmd_execute_dose
+        data:
+          switch_id: switch.dmd_pompe_1
+          duree_s: "{{ states('sensor.dmd_p1_dose_duration') | int }}"
+          volume_ml: "{{ states('sensor.dmd_p1_dose_volume') | float }}"
+          bidon_entity: input_number.dmd_p1_tank_remaining
+          counter_entity: counter.dmd_p1_daily_count
+          volume_total_entity: input_number.dmd_p1_total_volume
+          doses_total_entity: input_number.dmd_p1_total_doses
+          datetime_entity: input_datetime.dmd_p1_last_dose
+
+  dmd_manual_dose_p2:
+    alias: "Pump 2 : Manual dose"
+    sequence:
+      - service: script.dmd_execute_dose
+        data:
+          switch_id: switch.dmd_pompe_2
+          duree_s: "{{ states('sensor.dmd_p2_dose_duration') | int }}"
+          volume_ml: "{{ states('sensor.dmd_p2_dose_volume') | float }}"
+          bidon_entity: input_number.dmd_p2_tank_remaining
+          counter_entity: counter.dmd_p2_daily_count
+          volume_total_entity: input_number.dmd_p2_total_volume
+          doses_total_entity: input_number.dmd_p2_total_doses
+          datetime_entity: input_datetime.dmd_p2_last_dose
+
+  dmd_manual_dose_p3:
+    alias: "Pump 3 : Manual dose"
+    sequence:
+      - service: script.dmd_execute_dose
+        data:
+          switch_id: switch.dmd_pompe_3
+          duree_s: "{{ states('sensor.dmd_p3_dose_duration') | int }}"
+          volume_ml: "{{ states('sensor.dmd_p3_dose_volume') | float }}"
+          bidon_entity: input_number.dmd_p3_tank_remaining
+          counter_entity: counter.dmd_p3_daily_count
+          volume_total_entity: input_number.dmd_p3_total_volume
+          doses_total_entity: input_number.dmd_p3_total_doses
+          datetime_entity: input_datetime.dmd_p3_last_dose
+
+  dmd_manual_dose_p4:
+    alias: "Pump 4 : Manual dose"
+    sequence:
+      - service: script.dmd_execute_dose
+        data:
+          switch_id: switch.dmd_pompe_4
+          duree_s: "{{ states('sensor.dmd_p4_dose_duration') | int }}"
+          volume_ml: "{{ states('sensor.dmd_p4_dose_volume') | float }}"
+          bidon_entity: input_number.dmd_p4_tank_remaining
+          counter_entity: counter.dmd_p4_daily_count
+          volume_total_entity: input_number.dmd_p4_total_volume
+          doses_total_entity: input_number.dmd_p4_total_doses
+          datetime_entity: input_datetime.dmd_p4_last_dose
+
+  dmd_calibration_p1:
+    alias: "Pump 1 : Calibration"
+    sequence:
+      - service: switch.turn_on
+        target:
+          entity_id: switch.dmd_pompe_1
+      - delay:
+          seconds: "{{ states('input_number.dmd_p1_calib_duration') | int }}"
+      - service: switch.turn_off
+        target:
+          entity_id: switch.dmd_pompe_1
+      - service: input_boolean.turn_off
+        target:
+          entity_id: input_boolean.dmd_p1_calib_start
+      - service: input_boolean.turn_off
+        target:
+          entity_id: input_boolean.dmd_p1_calib_mode
+      - service: notify.dmd_admin
+        data:
+          title: >-
+            ✅ {{ states('input_text.dmd_p1_name') }} calibration complete
+          message: "Note the collected volume and enter it in Calibration volume."
+
+  dmd_calibration_p2:
+    alias: "Pump 2 : Calibration"
+    sequence:
+      - service: switch.turn_on
+        target:
+          entity_id: switch.dmd_pompe_2
+      - delay:
+          seconds: "{{ states('input_number.dmd_p2_calib_duration') | int }}"
+      - service: switch.turn_off
+        target:
+          entity_id: switch.dmd_pompe_2
+      - service: input_boolean.turn_off
+        target:
+          entity_id: input_boolean.dmd_p2_calib_start
+      - service: input_boolean.turn_off
+        target:
+          entity_id: input_boolean.dmd_p2_calib_mode
+      - service: notify.dmd_admin
+        data:
+          title: >-
+            ✅ {{ states('input_text.dmd_p2_name') }} calibration complete
+          message: "Note the collected volume and enter it in Calibration volume."
+
+  dmd_calibration_p3:
+    alias: "Pump 3 : Calibration"
+    sequence:
+      - service: switch.turn_on
+        target:
+          entity_id: switch.dmd_pompe_3
+      - delay:
+          seconds: "{{ states('input_number.dmd_p3_calib_duration') | int }}"
+      - service: switch.turn_off
+        target:
+          entity_id: switch.dmd_pompe_3
+      - service: input_boolean.turn_off
+        target:
+          entity_id: input_boolean.dmd_p3_calib_start
+      - service: input_boolean.turn_off
+        target:
+          entity_id: input_boolean.dmd_p3_calib_mode
+      - service: notify.dmd_admin
+        data:
+          title: >-
+            ✅ {{ states('input_text.dmd_p3_name') }} calibration complete
+          message: "Note the collected volume and enter it in Calibration volume."
+
+  dmd_calibration_p4:
+    alias: "Pump 4 : Calibration"
+    sequence:
+      - service: switch.turn_on
+        target:
+          entity_id: switch.dmd_pompe_4
+      - delay:
+          seconds: "{{ states('input_number.dmd_p4_calib_duration') | int }}"
+      - service: switch.turn_off
+        target:
+          entity_id: switch.dmd_pompe_4
+      - service: input_boolean.turn_off
+        target:
+          entity_id: input_boolean.dmd_p4_calib_start
+      - service: input_boolean.turn_off
+        target:
+          entity_id: input_boolean.dmd_p4_calib_mode
+      - service: notify.dmd_admin
+        data:
+          title: >-
+            ✅ {{ states('input_text.dmd_p4_name') }} calibration complete
+          message: "Note the collected volume and enter it in Calibration volume."
+
+
+  dmd_tank_full_p1:
+    alias: "Pump 1 : Tank refilled"
+    sequence:
+      - service: input_number.set_value
+        target:
+          entity_id: input_number.dmd_p1_tank_remaining
+        data:
+          value: "{{ states('input_number.dmd_p1_tank_volume') | float(0) }}"
+
+  dmd_tank_full_p2:
+    alias: "Pump 2 : Tank refilled"
+    sequence:
+      - service: input_number.set_value
+        target:
+          entity_id: input_number.dmd_p2_tank_remaining
+        data:
+          value: "{{ states('input_number.dmd_p2_tank_volume') | float(0) }}"
+
+  dmd_tank_full_p3:
+    alias: "Pump 3 : Tank refilled"
+    sequence:
+      - service: input_number.set_value
+        target:
+          entity_id: input_number.dmd_p3_tank_remaining
+        data:
+          value: "{{ states('input_number.dmd_p3_tank_volume') | float(0) }}"
+
+  dmd_tank_full_p4:
+    alias: "Pump 4 : Tank refilled"
+    sequence:
+      - service: input_number.set_value
+        target:
+          entity_id: input_number.dmd_p4_tank_remaining
+        data:
+          value: "{{ states('input_number.dmd_p4_tank_volume') | float(0) }}"
+
+  dmd_test_notification:
+    alias: "DIY my Dose : Test notification"
+    sequence:
+      - service: notify.dmd_admin
+        data:
+          title: "✅ DIY my Dose — Notifications OK"
+          message: >-
+            Notifications are working correctly.
+            Device: {{ states('sensor.dmd_status') }} —
+            {{ now().strftime('%d/%m/%Y %H:%M') }}

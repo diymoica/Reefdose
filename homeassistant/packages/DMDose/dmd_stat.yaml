@@ -1,1 +1,343 @@
+# ============================================================
+#  Copyright (c) 2026 DIY Moi Ca — diymoica.com
+#  License : Custom — personal use only, no commercial use
+#  See LICENSE file at github.com/diymoica/dmd
+# ============================================================
+
+##################################################################################################################################
+#                                                                                                                                #
+#   ESP32 (name: dmd) :                                                                                                    #
+#     switch.dmd_pompe_1  (Kh)      switch.dmd_pompe_2  (Ca)                                                         #
+#     switch.dmd_pompe_3  (Mg)      switch.dmd_pompe_4  (Phyto)                                                      #
+#     binary_sensor.dmd_status                                                                                             #
+#   Notifications : notify.dmd_admin  (defined in packages/common/notify.yaml)                                           #
+##################################################################################################################################
+
+# dmd_stat.yaml — Statistics (counters, history, total volumes)
+
+input_number:
+  dmd_p1_total_volume:
+    name: "Pump 1 : Total dosed volume"
+    min: 0
+    max: 9999999
+    step: 0.1
+    unit_of_measurement: ml
+    icon: mdi:chart-line
+    mode: box
+  dmd_p1_total_doses:
+    name: "Pump 1 : Total doses"
+    min: 0
+    max: 9999999
+    step: 1
+    unit_of_measurement: doses
+    icon: mdi:counter
+    mode: box
+  dmd_p1_missed_doses:
+    name: "Pump 1 : Missed doses"
+    min: 0
+    max: 9999
+    step: 1
+    unit_of_measurement: doses
+    icon: mdi:alert-circle
+    mode: box
+
+  # --- Ca ---
+  dmd_p2_total_volume:
+    name: "Pump 2 : Total dosed volume"
+    min: 0
+    max: 9999999
+    step: 0.1
+    unit_of_measurement: ml
+    icon: mdi:chart-line
+    mode: box
+  dmd_p2_total_doses:
+    name: "Pump 2 : Total doses"
+    min: 0
+    max: 9999999
+    step: 1
+    unit_of_measurement: doses
+    icon: mdi:counter
+    mode: box
+  dmd_p2_missed_doses:
+    name: "Pump 2 : Missed doses"
+    min: 0
+    max: 9999
+    step: 1
+    unit_of_measurement: doses
+    icon: mdi:alert-circle
+    mode: box
+
+  # --- Mg ---
+  dmd_p3_total_volume:
+    name: "Pump 3 : Total dosed volume"
+    min: 0
+    max: 9999999
+    step: 0.1
+    unit_of_measurement: ml
+    icon: mdi:chart-line
+    mode: box
+  dmd_p3_total_doses:
+    name: "Pump 3 : Total doses"
+    min: 0
+    max: 9999999
+    step: 1
+    unit_of_measurement: doses
+    icon: mdi:counter
+    mode: box
+  dmd_p3_missed_doses:
+    name: "Pump 3 : Missed doses"
+    min: 0
+    max: 9999
+    step: 1
+    unit_of_measurement: doses
+    icon: mdi:alert-circle
+    mode: box
+
+  # --- Phyto ---
+  dmd_p4_total_volume:
+    name: "Pump 4 : Total dosed volume"
+    min: 0
+    max: 9999999
+    step: 0.1
+    unit_of_measurement: ml
+    icon: mdi:chart-line
+    mode: box
+  dmd_p4_total_doses:
+    name: "Pump 4 : Total doses"
+    min: 0
+    max: 9999999
+    step: 1
+    unit_of_measurement: doses
+    icon: mdi:counter
+    mode: box
+  dmd_p4_missed_doses:
+    name: "Pump 4 : Missed doses"
+    min: 0
+    max: 9999
+    step: 1
+    unit_of_measurement: doses
+    icon: mdi:alert-circle
+    mode: box
+
+
+##################################################################################################################################
+#                                               INPUT_DATETIME                                                                   #
+##################################################################################################################################
+
+
+input_datetime:
+  dmd_p1_last_dose:
+    name: "Pump 1 : Last dose"
+    has_date: true
+    has_time: true
+    icon: mdi:clock-check
+  dmd_p2_last_dose:
+    name: "Pump 2 : Last dose"
+    has_date: true
+    has_time: true
+    icon: mdi:clock-check
+  dmd_p3_last_dose:
+    name: "Pump 3 : Last dose"
+    has_date: true
+    has_time: true
+    icon: mdi:clock-check
+  dmd_p4_last_dose:
+    name: "Pump 4 : Last dose"
+    has_date: true
+    has_time: true
+    icon: mdi:clock-check
+
+
+##################################################################################################################################
+#                                               COUNTER                                                                         #
+##################################################################################################################################
+
+
+counter:
+  dmd_p1_daily_count:
+    name: "Pump 1 : Doses today"
+    initial: 0
+    step: 1
+    icon: mdi:counter
+    restore: true
+  dmd_p2_daily_count:
+    name: "Pump 2 : Doses today"
+    initial: 0
+    step: 1
+    icon: mdi:counter
+    restore: true
+  dmd_p3_daily_count:
+    name: "Pump 3 : Doses today"
+    initial: 0
+    step: 1
+    icon: mdi:counter
+    restore: true
+  dmd_p4_daily_count:
+    name: "Pump 4 : Doses today"
+    initial: 0
+    step: 1
+    icon: mdi:counter
+    restore: true
+
+
+##################################################################################################################################
+#                                               SENSORS                                                                         #
+##################################################################################################################################
+
+
+sensor:
+  - platform: template
+    sensors:
+
+      dmd_p1_time_since_dose:
+        friendly_name: "Pump 1 : Time since last dose"
+        icon_template: mdi:clock-outline
+        value_template: >-
+          {% set dt = states('input_datetime.dmd_p1_last_dose') %}
+          {% if dt in ['unknown', 'unavailable'] %}Never
+          {% else %}
+            {% set diff = (now() - as_datetime(dt).replace(tzinfo=now().tzinfo)).total_seconds() | int %}
+            {% set h = (diff // 3600) | int %}
+            {% set m = ((diff % 3600) // 60) | int %}
+            {% if h > 0 %}{{ h }}h {{ m }}min{% else %}{{ m }} min{% endif %}
+          {% endif %}
+
+      dmd_p1_weekly_volume:
+        friendly_name: "Pump 1 : Weekly volume (estimated)"
+        unit_of_measurement: "ml"
+        icon_template: mdi:chart-bar
+        value_template: >-
+          {{ (states('input_number.dmd_p1_daily_dose') | float(0) * 7) | round(1) }}
+
+      dmd_p1_monthly_volume:
+        friendly_name: "Pump 1 : Monthly volume (estimated)"
+        unit_of_measurement: "ml"
+        icon_template: mdi:chart-bar
+        value_template: >-
+          {{ (states('input_number.dmd_p1_daily_dose') | float(0) * now().day) | round(1) }}
+
+      dmd_p1_yearly_volume:
+        friendly_name: "Pump 1 : Yearly volume (estimated)"
+        unit_of_measurement: "ml"
+        icon_template: mdi:chart-line
+        value_template: >-
+          {% set debut = now().replace(month=1, day=1, hour=0, minute=0, second=0) %}
+          {% set jours = (now() - debut).days + 1 %}
+          {{ (states('input_number.dmd_p1_daily_dose') | float(0) * jours) | round(1) }}
+
+      # --- Ca ---
+      dmd_p2_time_since_dose:
+        friendly_name: "Pump 2 : Time since last dose"
+        icon_template: mdi:clock-outline
+        value_template: >-
+          {% set dt = states('input_datetime.dmd_p2_last_dose') %}
+          {% if dt in ['unknown', 'unavailable'] %}Never
+          {% else %}
+            {% set diff = (now() - as_datetime(dt).replace(tzinfo=now().tzinfo)).total_seconds() | int %}
+            {% set h = (diff // 3600) | int %}
+            {% set m = ((diff % 3600) // 60) | int %}
+            {% if h > 0 %}{{ h }}h {{ m }}min{% else %}{{ m }} min{% endif %}
+          {% endif %}
+
+      dmd_p2_weekly_volume:
+        friendly_name: "Pump 2 : Weekly volume (estimated)"
+        unit_of_measurement: "ml"
+        icon_template: mdi:chart-bar
+        value_template: >-
+          {{ (states('input_number.dmd_p2_daily_dose') | float(0) * 7) | round(1) }}
+
+      dmd_p2_monthly_volume:
+        friendly_name: "Pump 2 : Monthly volume (estimated)"
+        unit_of_measurement: "ml"
+        icon_template: mdi:chart-bar
+        value_template: >-
+          {{ (states('input_number.dmd_p2_daily_dose') | float(0) * now().day) | round(1) }}
+
+      dmd_p2_yearly_volume:
+        friendly_name: "Pump 2 : Yearly volume (estimated)"
+        unit_of_measurement: "ml"
+        icon_template: mdi:chart-line
+        value_template: >-
+          {% set debut = now().replace(month=1, day=1, hour=0, minute=0, second=0) %}
+          {% set jours = (now() - debut).days + 1 %}
+          {{ (states('input_number.dmd_p2_daily_dose') | float(0) * jours) | round(1) }}
+
+      # --- Mg ---
+      dmd_p3_time_since_dose:
+        friendly_name: "Pump 3 : Time since last dose"
+        icon_template: mdi:clock-outline
+        value_template: >-
+          {% set dt = states('input_datetime.dmd_p3_last_dose') %}
+          {% if dt in ['unknown', 'unavailable'] %}Never
+          {% else %}
+            {% set diff = (now() - as_datetime(dt).replace(tzinfo=now().tzinfo)).total_seconds() | int %}
+            {% set h = (diff // 3600) | int %}
+            {% set m = ((diff % 3600) // 60) | int %}
+            {% if h > 0 %}{{ h }}h {{ m }}min{% else %}{{ m }} min{% endif %}
+          {% endif %}
+
+      dmd_p3_weekly_volume:
+        friendly_name: "Pump 3 : Weekly volume (estimated)"
+        unit_of_measurement: "ml"
+        icon_template: mdi:chart-bar
+        value_template: >-
+          {{ (states('input_number.dmd_p3_daily_dose') | float(0) * 7) | round(1) }}
+
+      dmd_p3_monthly_volume:
+        friendly_name: "Pump 3 : Monthly volume (estimated)"
+        unit_of_measurement: "ml"
+        icon_template: mdi:chart-bar
+        value_template: >-
+          {{ (states('input_number.dmd_p3_daily_dose') | float(0) * now().day) | round(1) }}
+
+      dmd_p3_yearly_volume:
+        friendly_name: "Pump 3 : Yearly volume (estimated)"
+        unit_of_measurement: "ml"
+        icon_template: mdi:chart-line
+        value_template: >-
+          {% set debut = now().replace(month=1, day=1, hour=0, minute=0, second=0) %}
+          {% set jours = (now() - debut).days + 1 %}
+          {{ (states('input_number.dmd_p3_daily_dose') | float(0) * jours) | round(1) }}
+
+      # --- Phyto ---
+      dmd_p4_time_since_dose:
+        friendly_name: "Pump 4 : Time since last dose"
+        icon_template: mdi:clock-outline
+        value_template: >-
+          {% set dt = states('input_datetime.dmd_p4_last_dose') %}
+          {% if dt in ['unknown', 'unavailable'] %}Never
+          {% else %}
+            {% set diff = (now() - as_datetime(dt).replace(tzinfo=now().tzinfo)).total_seconds() | int %}
+            {% set h = (diff // 3600) | int %}
+            {% set m = ((diff % 3600) // 60) | int %}
+            {% if h > 0 %}{{ h }}h {{ m }}min{% else %}{{ m }} min{% endif %}
+          {% endif %}
+
+      dmd_p4_weekly_volume:
+        friendly_name: "Pump 4 : Weekly volume (estimated)"
+        unit_of_measurement: "ml"
+        icon_template: mdi:chart-bar
+        value_template: >-
+          {{ (states('input_number.dmd_p4_daily_dose') | float(0) * 7) | round(1) }}
+
+      dmd_p4_monthly_volume:
+        friendly_name: "Pump 4 : Monthly volume (estimated)"
+        unit_of_measurement: "ml"
+        icon_template: mdi:chart-bar
+        value_template: >-
+          {{ (states('input_number.dmd_p4_daily_dose') | float(0) * now().day) | round(1) }}
+
+      dmd_p4_yearly_volume:
+        friendly_name: "Pump 4 : Yearly volume (estimated)"
+        unit_of_measurement: "ml"
+        icon_template: mdi:chart-line
+        value_template: >-
+          {% set debut = now().replace(month=1, day=1, hour=0, minute=0, second=0) %}
+          {% set jours = (now() - debut).days + 1 %}
+          {{ (states('input_number.dmd_p4_daily_dose') | float(0) * jours) | round(1) }}
+
+
+##################################################################################################################################
+#                                               SCRIPTS                                                                         #
+##################################################################################################################################
 
