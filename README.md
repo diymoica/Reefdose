@@ -28,6 +28,13 @@ No logic is imposed : you decide everything.
 
 ---
 
+## Screenshots
+
+![Dashboard Control](docs/screenshots/dashboard_control_en.png)
+![Dashboard Settings](docs/screenshots/dashboard_setting_en_1.png)
+![Dashboard Settings](docs/screenshots/dashboard_setting_en_2.png)
+![Dashboard Statistics](docs/screenshots/dashboard_stats_en.png)
+
 ### Features
 
 #### Dosing
