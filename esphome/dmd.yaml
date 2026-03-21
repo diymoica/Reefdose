@@ -3,7 +3,7 @@
 #                                              DMDose - ESPHome                                                                  #
 #                                                                                                                                #
 #   Board    : ESP32 Dev                                                                                                         #
-#   IP fixe  : définie dans la section wifi ci-dessous (manual_ip)                                                              #
+#   IP fixe  : 192.168.1.34                                                                                                     #
 #                                                                                                                                #
 #   GPIO :                                                                                                                       #
 #     - GPIO27 → Pompe 1                                                                                                        #
@@ -23,6 +23,30 @@ esp32:
     type: arduino
 
 
+
+# ----------------------------------------------------------------
+#  Variables globales — stockent les max_duration pour les watchdogs
+#  Mis à jour via on_value sur les number entities
+#  Évite les race conditions entre API HA et on_turn_on
+# ----------------------------------------------------------------
+globals:
+  - id: g_p1_max
+    type: float
+    restore_value: false
+    initial_value: 300
+  - id: g_p2_max
+    type: float
+    restore_value: false
+    initial_value: 300
+  - id: g_p3_max
+    type: float
+    restore_value: false
+    initial_value: 300
+  - id: g_p4_max
+    type: float
+    restore_value: false
+    initial_value: 300
+
 # ----------------------------------------------------------------
 #  Logging
 # ----------------------------------------------------------------
@@ -35,7 +59,6 @@ logger:
 api:
   encryption:
     key: !secret esphome_api_key
-    # Generate your own key in ESPHome UI or with: esphome generate-key
 
 
 # ----------------------------------------------------------------
@@ -44,7 +67,6 @@ api:
 ota:
   - platform: esphome
     password: !secret esphome_ota_password
-    # Set a strong password in your secrets.yaml
 
 # ----------------------------------------------------------------
 #  WiFi
@@ -53,21 +75,19 @@ wifi:
   ssid: !secret wifi_ssid
   password: !secret wifi_password
 
-  # Optional: set a static IP (recommended for stable HA connection)
-  # manual_ip:
-  #   static_ip: 192.168.X.XX    # ← your ESP32 IP
-  #   gateway: 192.168.X.1       # ← your router IP
-  #   subnet: 255.255.255.0
+  manual_ip:
+    static_ip: !secret dmd_ip
+    gateway: !secret wifi_gateway
+    subnet: 255.255.255.0
 
   ap:
-    ssid: "DMDose Fallback Hotspot"
-    password: !secret esphome_ap_password
-    # Set a fallback hotspot password in your secrets.yaml
+    ssid: !secret wifi_ssid
+    password: !secret ap_password
 
 captive_portal:
 
 # ----------------------------------------------------------------
-#  Interface web locale (accès direct via http://<your-esp32-ip>)
+#  Interface web locale (accès direct via http://192.168.1.34)
 # ----------------------------------------------------------------
 web_server:
   port: 80
@@ -82,7 +102,9 @@ binary_sensor:
 # ----------------------------------------------------------------
 #  Switchs des pompes
 #  restore_mode: ALWAYS_OFF → sécurité au redémarrage
-#  Sans ça, une pompe pourrait rester bloquée ON après un reboot
+#  max_duration → watchdog hardware : coupe la pompe si elle
+#  reste ON plus longtemps que la durée configurée depuis HA
+#  (sécurité si HA plante en pleine dose)
 # ----------------------------------------------------------------
 switch:
   - platform: gpio
@@ -91,6 +113,14 @@ switch:
     id: pompe_1
     icon: "mdi:pump"
     restore_mode: ALWAYS_OFF
+    on_turn_on:
+      - delay: 10ms
+      - if:
+          condition:
+            lambda: 'return id(p1_max_duration).state > 0;'
+          then:
+            - delay: !lambda 'return id(p1_max_duration).state * 1000;'
+            - switch.turn_off: pompe_1
 
   - platform: gpio
     pin: GPIO12
@@ -98,6 +128,14 @@ switch:
     id: pompe_2
     icon: "mdi:pump"
     restore_mode: ALWAYS_OFF
+    on_turn_on:
+      - delay: 10ms
+      - if:
+          condition:
+            lambda: 'return id(p2_max_duration).state > 0;'
+          then:
+            - delay: !lambda 'return id(p2_max_duration).state * 1000;'
+            - switch.turn_off: pompe_2
 
   - platform: gpio
     pin: GPIO13
@@ -105,6 +143,14 @@ switch:
     id: pompe_3
     icon: "mdi:pump"
     restore_mode: ALWAYS_OFF
+    on_turn_on:
+      - delay: 10ms
+      - if:
+          condition:
+            lambda: 'return id(p3_max_duration).state > 0;'
+          then:
+            - delay: !lambda 'return id(p3_max_duration).state * 1000;'
+            - switch.turn_off: pompe_3
 
   - platform: gpio
     pin: GPIO14
@@ -112,6 +158,81 @@ switch:
     id: pompe_4
     icon: "mdi:pump"
     restore_mode: ALWAYS_OFF
+    on_turn_on:
+      - delay: 10ms
+      - if:
+          condition:
+            lambda: 'return id(p4_max_duration).state > 0;'
+          then:
+            - delay: !lambda 'return id(p4_max_duration).state * 1000;'
+            - switch.turn_off: pompe_4
+
+# ----------------------------------------------------------------
+#  Watchdog hardware — durée max par pompe (secondes)
+#  Configurable depuis HA via number.dmd_pX_max_duration
+#  Poussé depuis HA par l'automation dmd_push_max_duration
+#  Valeur 0 = watchdog désactivé
+# ----------------------------------------------------------------
+number:
+  - platform: template
+    name: "p1_max_duration"
+    id: p1_max_duration
+    min_value: 0
+    max_value: 300
+    step: 1
+    unit_of_measurement: s
+    optimistic: true
+    restore_value: true
+    initial_value: 300
+    on_value:
+      - globals.set:
+          id: g_p1_max
+          value: !lambda 'return x;'
+
+  - platform: template
+    name: "p2_max_duration"
+    id: p2_max_duration
+    min_value: 0
+    max_value: 300
+    step: 1
+    unit_of_measurement: s
+    optimistic: true
+    restore_value: true
+    initial_value: 300
+    on_value:
+      - globals.set:
+          id: g_p2_max
+          value: !lambda 'return x;'
+
+  - platform: template
+    name: "p3_max_duration"
+    id: p3_max_duration
+    min_value: 0
+    max_value: 300
+    step: 1
+    unit_of_measurement: s
+    optimistic: true
+    restore_value: true
+    initial_value: 300
+    on_value:
+      - globals.set:
+          id: g_p3_max
+          value: !lambda 'return x;'
+
+  - platform: template
+    name: "p4_max_duration"
+    id: p4_max_duration
+    min_value: 0
+    max_value: 300
+    step: 1
+    unit_of_measurement: s
+    optimistic: true
+    restore_value: true
+    initial_value: 300
+    on_value:
+      - globals.set:
+          id: g_p4_max
+          value: !lambda 'return x;'
 
 # ----------------------------------------------------------------
 #  Sensors exposés dans Home Assistant

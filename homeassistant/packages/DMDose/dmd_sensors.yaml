@@ -1,7 +1,7 @@
 # ============================================================
 #  Copyright (c) 2026 DIY Moi Ca — diymoica.com
 #  License : Custom — personal use only, no commercial use
-#  See LICENSE file at github.com/diymoica/dmd
+#  See LICENSE file at github.com/diymoica/DMdose
 # ============================================================
 
 ##################################################################################################################################
@@ -55,6 +55,17 @@ sensor:
           {% set debit = states('sensor.dmd_p1_flow_rate') | float(0.001) %}
           {{ ((dose / freq) / debit) | round(1) }}
 
+
+      dmd_p1_max_duration:
+        friendly_name: "Pump 1 : Max safe duration"
+        unit_of_measurement: "s"
+        icon_template: mdi:shield-lock
+        value_template: >-
+          {% set max_vol = states('input_number.dmd_p1_max_volume') | float(0) %}
+          {% set flow = states('sensor.dmd_p1_flow_rate') | float(0) %}
+          {% if max_vol <= 0 or flow <= 0 %}30
+          {% else %}{{ [((max_vol / flow) | round(0) | int), 5] | max }}{% endif %}
+
       dmd_p1_tank_pct:
         friendly_name_template: "{{ states('input_text.dmd_p1_name') }}"
         unit_of_measurement: "%"
@@ -100,6 +111,16 @@ sensor:
           {% set freq = states('input_number.dmd_p2_frequency') | float(1) %}
           {% set debit = states('sensor.dmd_p2_flow_rate') | float(0.001) %}
           {{ ((dose / freq) / debit) | round(1) }}
+
+      dmd_p2_max_duration:
+        friendly_name: "Pump 2 : Max safe duration"
+        unit_of_measurement: "s"
+        icon_template: mdi:shield-lock
+        value_template: >-
+          {% set max_vol = states('input_number.dmd_p2_max_volume') | float(0) %}
+          {% set flow = states('sensor.dmd_p2_flow_rate') | float(0) %}
+          {% if max_vol <= 0 or flow <= 0 %}30
+          {% else %}{{ [((max_vol / flow) | round(0) | int), 5] | max }}{% endif %}
 
       dmd_p2_tank_pct:
         friendly_name_template: "{{ states('input_text.dmd_p2_name') }}"
@@ -147,6 +168,16 @@ sensor:
           {% set debit = states('sensor.dmd_p3_flow_rate') | float(0.001) %}
           {{ ((dose / freq) / debit) | round(1) }}
 
+      dmd_p3_max_duration:
+        friendly_name: "Pump 3 : Max safe duration"
+        unit_of_measurement: "s"
+        icon_template: mdi:shield-lock
+        value_template: >-
+          {% set max_vol = states('input_number.dmd_p3_max_volume') | float(0) %}
+          {% set flow = states('sensor.dmd_p3_flow_rate') | float(0) %}
+          {% if max_vol <= 0 or flow <= 0 %}30
+          {% else %}{{ [((max_vol / flow) | round(0) | int), 5] | max }}{% endif %}
+
       dmd_p3_tank_pct:
         friendly_name_template: "{{ states('input_text.dmd_p3_name') }}"
         unit_of_measurement: "%"
@@ -193,6 +224,16 @@ sensor:
           {% set debit = states('sensor.dmd_p4_flow_rate') | float(0.001) %}
           {{ ((dose / freq) / debit) | round(1) }}
 
+      dmd_p4_max_duration:
+        friendly_name: "Pump 4 : Max safe duration"
+        unit_of_measurement: "s"
+        icon_template: mdi:shield-lock
+        value_template: >-
+          {% set max_vol = states('input_number.dmd_p4_max_volume') | float(0) %}
+          {% set flow = states('sensor.dmd_p4_flow_rate') | float(0) %}
+          {% if max_vol <= 0 or flow <= 0 %}30
+          {% else %}{{ [((max_vol / flow) | round(0) | int), 5] | max }}{% endif %}
+
       dmd_p4_tank_pct:
         friendly_name_template: "{{ states('input_text.dmd_p4_name') }}"
         unit_of_measurement: "%"
@@ -211,6 +252,223 @@ sensor:
           {% set d = states('input_number.dmd_p4_daily_dose') | float(1) %}
           {{ (r / d) | round(1) }}
 
+      # ============================================================
+      #  Safety — ESP32 hardware timeout per pump (v1.0.0)
+      #  = dose_duration × dmd_safety_esp32_mult
+      #  Pushed to ESP32 number entity by dmd_push_max_duration
+      # ============================================================
+      dmd_p1_esp32_timeout:
+        friendly_name: "Pump 1 : ESP32 hardware timeout"
+        unit_of_measurement: "s"
+        icon_template: mdi:shield-lock
+        value_template: >-
+          {%- set ov = states('input_number.dmd_p1_safety_esp32_mult') | float(0) %}
+          {%- set gl = states('input_number.dmd_safety_esp32_mult') | float(6) %}
+          {%- set mult = ov if ov > 0 else gl %}
+          {%- set dur = states('sensor.dmd_p1_dose_duration') | float(0) %}
+          {%- if dur <= 0 %}60
+          {%- else %}{{ [(dur * mult) | round(0) | int, 5] | max }}{%- endif %}
+
+      dmd_p2_esp32_timeout:
+        friendly_name: "Pump 2 : ESP32 hardware timeout"
+        unit_of_measurement: "s"
+        icon_template: mdi:shield-lock
+        value_template: >-
+          {%- set ov = states('input_number.dmd_p2_safety_esp32_mult') | float(0) %}
+          {%- set gl = states('input_number.dmd_safety_esp32_mult') | float(6) %}
+          {%- set mult = ov if ov > 0 else gl %}
+          {%- set dur = states('sensor.dmd_p2_dose_duration') | float(0) %}
+          {%- if dur <= 0 %}60
+          {%- else %}{{ [(dur * mult) | round(0) | int, 5] | max }}{%- endif %}
+
+      dmd_p3_esp32_timeout:
+        friendly_name: "Pump 3 : ESP32 hardware timeout"
+        unit_of_measurement: "s"
+        icon_template: mdi:shield-lock
+        value_template: >-
+          {%- set ov = states('input_number.dmd_p3_safety_esp32_mult') | float(0) %}
+          {%- set gl = states('input_number.dmd_safety_esp32_mult') | float(6) %}
+          {%- set mult = ov if ov > 0 else gl %}
+          {%- set dur = states('sensor.dmd_p3_dose_duration') | float(0) %}
+          {%- if dur <= 0 %}60
+          {%- else %}{{ [(dur * mult) | round(0) | int, 5] | max }}{%- endif %}
+
+      dmd_p4_esp32_timeout:
+        friendly_name: "Pump 4 : ESP32 hardware timeout"
+        unit_of_measurement: "s"
+        icon_template: mdi:shield-lock
+        value_template: >-
+          {%- set ov = states('input_number.dmd_p4_safety_esp32_mult') | float(0) %}
+          {%- set gl = states('input_number.dmd_safety_esp32_mult') | float(6) %}
+          {%- set mult = ov if ov > 0 else gl %}
+          {%- set dur = states('sensor.dmd_p4_dose_duration') | float(0) %}
+          {%- if dur <= 0 %}60
+          {%- else %}{{ [(dur * mult) | round(0) | int, 5] | max }}{%- endif %}
+
+
+      # ============================================================
+      #  Safety — Watchdog timeouts calculés (v1.0.7)
+      #  Timeout = dose_duration × multiplicateur (global ou override)
+      #  Override = 0 → utilise le multiplicateur global
+      # ============================================================
+
+      dmd_p1_soft_timeout:
+        friendly_name: "Pump 1 : Soft watchdog timeout"
+        unit_of_measurement: "s"
+        icon_template: mdi:shield-half-full
+        value_template: >-
+          {%- set ov = states('input_number.dmd_p1_safety_soft_mult') | float(0) %}
+          {%- set gl = states('input_number.dmd_safety_soft_mult') | float(2) %}
+          {%- set mult = ov if ov > 0 else gl %}
+          {%- set dur = states('sensor.dmd_p1_dose_duration') | float(0) %}
+          {%- if dur <= 0 %}20
+          {%- else %}{{ [(dur * mult) | round(0) | int, 5] | max }}{%- endif %}
+
+      dmd_p2_soft_timeout:
+        friendly_name: "Pump 2 : Soft watchdog timeout"
+        unit_of_measurement: "s"
+        icon_template: mdi:shield-half-full
+        value_template: >-
+          {%- set ov = states('input_number.dmd_p2_safety_soft_mult') | float(0) %}
+          {%- set gl = states('input_number.dmd_safety_soft_mult') | float(2) %}
+          {%- set mult = ov if ov > 0 else gl %}
+          {%- set dur = states('sensor.dmd_p2_dose_duration') | float(0) %}
+          {%- if dur <= 0 %}20
+          {%- else %}{{ [(dur * mult) | round(0) | int, 5] | max }}{%- endif %}
+
+      dmd_p3_soft_timeout:
+        friendly_name: "Pump 3 : Soft watchdog timeout"
+        unit_of_measurement: "s"
+        icon_template: mdi:shield-half-full
+        value_template: >-
+          {%- set ov = states('input_number.dmd_p3_safety_soft_mult') | float(0) %}
+          {%- set gl = states('input_number.dmd_safety_soft_mult') | float(2) %}
+          {%- set mult = ov if ov > 0 else gl %}
+          {%- set dur = states('sensor.dmd_p3_dose_duration') | float(0) %}
+          {%- if dur <= 0 %}20
+          {%- else %}{{ [(dur * mult) | round(0) | int, 5] | max }}{%- endif %}
+
+      dmd_p4_soft_timeout:
+        friendly_name: "Pump 4 : Soft watchdog timeout"
+        unit_of_measurement: "s"
+        icon_template: mdi:shield-half-full
+        value_template: >-
+          {%- set ov = states('input_number.dmd_p4_safety_soft_mult') | float(0) %}
+          {%- set gl = states('input_number.dmd_safety_soft_mult') | float(2) %}
+          {%- set mult = ov if ov > 0 else gl %}
+          {%- set dur = states('sensor.dmd_p4_dose_duration') | float(0) %}
+          {%- if dur <= 0 %}20
+          {%- else %}{{ [(dur * mult) | round(0) | int, 5] | max }}{%- endif %}
+
+      dmd_p1_hard_timeout:
+        friendly_name: "Pump 1 : Hard watchdog timeout"
+        unit_of_measurement: "s"
+        icon_template: mdi:shield-alert
+        value_template: >-
+          {%- set ov = states('input_number.dmd_p1_safety_hard_mult') | float(0) %}
+          {%- set gl = states('input_number.dmd_safety_hard_mult') | float(4) %}
+          {%- set mult = ov if ov > 0 else gl %}
+          {%- set dur = states('sensor.dmd_p1_dose_duration') | float(0) %}
+          {%- if dur <= 0 %}40
+          {%- else %}{{ [(dur * mult) | round(0) | int, 5] | max }}{%- endif %}
+
+      dmd_p2_hard_timeout:
+        friendly_name: "Pump 2 : Hard watchdog timeout"
+        unit_of_measurement: "s"
+        icon_template: mdi:shield-alert
+        value_template: >-
+          {%- set ov = states('input_number.dmd_p2_safety_hard_mult') | float(0) %}
+          {%- set gl = states('input_number.dmd_safety_hard_mult') | float(4) %}
+          {%- set mult = ov if ov > 0 else gl %}
+          {%- set dur = states('sensor.dmd_p2_dose_duration') | float(0) %}
+          {%- if dur <= 0 %}40
+          {%- else %}{{ [(dur * mult) | round(0) | int, 5] | max }}{%- endif %}
+
+      dmd_p3_hard_timeout:
+        friendly_name: "Pump 3 : Hard watchdog timeout"
+        unit_of_measurement: "s"
+        icon_template: mdi:shield-alert
+        value_template: >-
+          {%- set ov = states('input_number.dmd_p3_safety_hard_mult') | float(0) %}
+          {%- set gl = states('input_number.dmd_safety_hard_mult') | float(4) %}
+          {%- set mult = ov if ov > 0 else gl %}
+          {%- set dur = states('sensor.dmd_p3_dose_duration') | float(0) %}
+          {%- if dur <= 0 %}40
+          {%- else %}{{ [(dur * mult) | round(0) | int, 5] | max }}{%- endif %}
+
+      dmd_p4_hard_timeout:
+        friendly_name: "Pump 4 : Hard watchdog timeout"
+        unit_of_measurement: "s"
+        icon_template: mdi:shield-alert
+        value_template: >-
+          {%- set ov = states('input_number.dmd_p4_safety_hard_mult') | float(0) %}
+          {%- set gl = states('input_number.dmd_safety_hard_mult') | float(4) %}
+          {%- set mult = ov if ov > 0 else gl %}
+          {%- set dur = states('sensor.dmd_p4_dose_duration') | float(0) %}
+          {%- if dur <= 0 %}40
+          {%- else %}{{ [(dur * mult) | round(0) | int, 5] | max }}{%- endif %}
+
+      dmd_p1_lock_timeout:
+        friendly_name: "Pump 1 : Lock watchdog timeout"
+        unit_of_measurement: "s"
+        icon_template: mdi:lock-clock
+        value_template: >-
+          {%- set ov = states('input_number.dmd_p1_safety_lock_mult') | float(0) %}
+          {%- set gl = states('input_number.dmd_safety_lock_mult') | float(8) %}
+          {%- set mult = ov if ov > 0 else gl %}
+          {%- set dur = states('sensor.dmd_p1_dose_duration') | float(0) %}
+          {%- if dur <= 0 %}80
+          {%- else %}{{ [(dur * mult) | round(0) | int, 10] | max }}{%- endif %}
+
+      dmd_p2_lock_timeout:
+        friendly_name: "Pump 2 : Lock watchdog timeout"
+        unit_of_measurement: "s"
+        icon_template: mdi:lock-clock
+        value_template: >-
+          {%- set ov = states('input_number.dmd_p2_safety_lock_mult') | float(0) %}
+          {%- set gl = states('input_number.dmd_safety_lock_mult') | float(8) %}
+          {%- set mult = ov if ov > 0 else gl %}
+          {%- set dur = states('sensor.dmd_p2_dose_duration') | float(0) %}
+          {%- if dur <= 0 %}80
+          {%- else %}{{ [(dur * mult) | round(0) | int, 10] | max }}{%- endif %}
+
+      dmd_p3_lock_timeout:
+        friendly_name: "Pump 3 : Lock watchdog timeout"
+        unit_of_measurement: "s"
+        icon_template: mdi:lock-clock
+        value_template: >-
+          {%- set ov = states('input_number.dmd_p3_safety_lock_mult') | float(0) %}
+          {%- set gl = states('input_number.dmd_safety_lock_mult') | float(8) %}
+          {%- set mult = ov if ov > 0 else gl %}
+          {%- set dur = states('sensor.dmd_p3_dose_duration') | float(0) %}
+          {%- if dur <= 0 %}80
+          {%- else %}{{ [(dur * mult) | round(0) | int, 10] | max }}{%- endif %}
+
+      dmd_p4_lock_timeout:
+        friendly_name: "Pump 4 : Lock watchdog timeout"
+        unit_of_measurement: "s"
+        icon_template: mdi:lock-clock
+        value_template: >-
+          {%- set ov = states('input_number.dmd_p4_safety_lock_mult') | float(0) %}
+          {%- set gl = states('input_number.dmd_safety_lock_mult') | float(8) %}
+          {%- set mult = ov if ov > 0 else gl %}
+          {%- set dur = states('sensor.dmd_p4_dose_duration') | float(0) %}
+          {%- if dur <= 0 %}80
+          {%- else %}{{ [(dur * mult) | round(0) | int, 10] | max }}{%- endif %}
+
+      dmd_safety_config_ok:
+        friendly_name: "Safety : Watchdog hierarchy valid"
+        icon_template: >-
+          {% if states('sensor.dmd_safety_config_ok') == 'OK' %}mdi:shield-check{% else %}mdi:shield-off{% endif %}
+        value_template: >-
+          {%- set soft = states('input_number.dmd_safety_soft_mult') | float(2) %}
+          {%- set hard = states('input_number.dmd_safety_hard_mult') | float(4) %}
+          {%- set esp32 = states('input_number.dmd_safety_esp32_mult') | float(6) %}
+          {%- set lock = states('input_number.dmd_safety_lock_mult') | float(8) %}
+          {%- if soft < hard and hard < esp32 and esp32 < lock %}OK
+          {%- elif soft >= hard %}Soft >= Hard !
+          {%- elif hard >= esp32 %}Hard >= ESP32 !
+          {%- else %}ESP32 >= Lock !{%- endif %}
 
       # --- Dosing window sensors (v0.9.1) ---
       # interval_min : calculated interval between doses based on window
@@ -272,12 +530,12 @@ sensor:
             {% if is_state('input_boolean.dmd_p1_full_day', 'on') %}
               {% set next_slot = ((now_min // interval) + 1) * interval %}
               {% if next_slot >= 1440 %}
-                Tomorrow 00:00
+                Demain 00:00
               {% else %}
                 {% set remaining = next_slot - now_min %}
                 {% set h = (remaining // 60) | int %}
                 {% set m = (remaining % 60) | int %}
-                {% if h > 0 %}in {{ h }}h {{ m }}min{% else %}in {{ m }} min{% endif %}
+                {% if h > 0 %}dans {{ h }}h {{ m }}min{% else %}dans {{ m }} min{% endif %}
               {% endif %}
             {% else %}
               {% set start_min = sh * 60 + sm %}
@@ -286,17 +544,17 @@ sensor:
                 {% set remaining = start_min - now_min %}
                 {% set h = (remaining // 60) | int %}
                 {% set m = (remaining % 60) | int %}
-                in {{ h }}h {{ m }}min (start)
+                dans {{ h }}h {{ m }}min (début)
               {% elif now_min > end_min %}
-                Tomorrow {{ '%02d:%02d' | format(sh, sm) }}
+                Demain {{ '%02d:%02d' | format(sh, sm) }}
               {% else %}
                 {% set diff = now_min - start_min %}
                 {% set remaining = interval - (diff % interval) %}
-                {% if remaining == interval %}Now
+                {% if remaining == interval %}Maintenant
                 {% else %}
                   {% set h = (remaining // 60) | int %}
                   {% set m = (remaining % 60) | int %}
-                  {% if h > 0 %}in {{ h }}h {{ m }}min{% else %}in {{ m }} min{% endif %}
+                  {% if h > 0 %}dans {{ h }}h {{ m }}min{% else %}dans {{ m }} min{% endif %}
                 {% endif %}
               {% endif %}
             {% endif %}
@@ -357,12 +615,12 @@ sensor:
             {% if is_state('input_boolean.dmd_p2_full_day', 'on') %}
               {% set next_slot = ((now_min // interval) + 1) * interval %}
               {% if next_slot >= 1440 %}
-                Tomorrow 00:00
+                Demain 00:00
               {% else %}
                 {% set remaining = next_slot - now_min %}
                 {% set h = (remaining // 60) | int %}
                 {% set m = (remaining % 60) | int %}
-                {% if h > 0 %}in {{ h }}h {{ m }}min{% else %}in {{ m }} min{% endif %}
+                {% if h > 0 %}dans {{ h }}h {{ m }}min{% else %}dans {{ m }} min{% endif %}
               {% endif %}
             {% else %}
               {% set start_min = sh * 60 + sm %}
@@ -371,17 +629,17 @@ sensor:
                 {% set remaining = start_min - now_min %}
                 {% set h = (remaining // 60) | int %}
                 {% set m = (remaining % 60) | int %}
-                in {{ h }}h {{ m }}min (start)
+                dans {{ h }}h {{ m }}min (début)
               {% elif now_min > end_min %}
-                Tomorrow {{ '%02d:%02d' | format(sh, sm) }}
+                Demain {{ '%02d:%02d' | format(sh, sm) }}
               {% else %}
                 {% set diff = now_min - start_min %}
                 {% set remaining = interval - (diff % interval) %}
-                {% if remaining == interval %}Now
+                {% if remaining == interval %}Maintenant
                 {% else %}
                   {% set h = (remaining // 60) | int %}
                   {% set m = (remaining % 60) | int %}
-                  {% if h > 0 %}in {{ h }}h {{ m }}min{% else %}in {{ m }} min{% endif %}
+                  {% if h > 0 %}dans {{ h }}h {{ m }}min{% else %}dans {{ m }} min{% endif %}
                 {% endif %}
               {% endif %}
             {% endif %}
@@ -442,12 +700,12 @@ sensor:
             {% if is_state('input_boolean.dmd_p3_full_day', 'on') %}
               {% set next_slot = ((now_min // interval) + 1) * interval %}
               {% if next_slot >= 1440 %}
-                Tomorrow 00:00
+                Demain 00:00
               {% else %}
                 {% set remaining = next_slot - now_min %}
                 {% set h = (remaining // 60) | int %}
                 {% set m = (remaining % 60) | int %}
-                {% if h > 0 %}in {{ h }}h {{ m }}min{% else %}in {{ m }} min{% endif %}
+                {% if h > 0 %}dans {{ h }}h {{ m }}min{% else %}dans {{ m }} min{% endif %}
               {% endif %}
             {% else %}
               {% set start_min = sh * 60 + sm %}
@@ -456,17 +714,17 @@ sensor:
                 {% set remaining = start_min - now_min %}
                 {% set h = (remaining // 60) | int %}
                 {% set m = (remaining % 60) | int %}
-                in {{ h }}h {{ m }}min (start)
+                dans {{ h }}h {{ m }}min (début)
               {% elif now_min > end_min %}
-                Tomorrow {{ '%02d:%02d' | format(sh, sm) }}
+                Demain {{ '%02d:%02d' | format(sh, sm) }}
               {% else %}
                 {% set diff = now_min - start_min %}
                 {% set remaining = interval - (diff % interval) %}
-                {% if remaining == interval %}Now
+                {% if remaining == interval %}Maintenant
                 {% else %}
                   {% set h = (remaining // 60) | int %}
                   {% set m = (remaining % 60) | int %}
-                  {% if h > 0 %}in {{ h }}h {{ m }}min{% else %}in {{ m }} min{% endif %}
+                  {% if h > 0 %}dans {{ h }}h {{ m }}min{% else %}dans {{ m }} min{% endif %}
                 {% endif %}
               {% endif %}
             {% endif %}
@@ -527,12 +785,12 @@ sensor:
             {% if is_state('input_boolean.dmd_p4_full_day', 'on') %}
               {% set next_slot = ((now_min // interval) + 1) * interval %}
               {% if next_slot >= 1440 %}
-                Tomorrow 00:00
+                Demain 00:00
               {% else %}
                 {% set remaining = next_slot - now_min %}
                 {% set h = (remaining // 60) | int %}
                 {% set m = (remaining % 60) | int %}
-                {% if h > 0 %}in {{ h }}h {{ m }}min{% else %}in {{ m }} min{% endif %}
+                {% if h > 0 %}dans {{ h }}h {{ m }}min{% else %}dans {{ m }} min{% endif %}
               {% endif %}
             {% else %}
               {% set start_min = sh * 60 + sm %}
@@ -541,18 +799,241 @@ sensor:
                 {% set remaining = start_min - now_min %}
                 {% set h = (remaining // 60) | int %}
                 {% set m = (remaining % 60) | int %}
-                in {{ h }}h {{ m }}min (start)
+                dans {{ h }}h {{ m }}min (début)
               {% elif now_min > end_min %}
-                Tomorrow {{ '%02d:%02d' | format(sh, sm) }}
+                Demain {{ '%02d:%02d' | format(sh, sm) }}
               {% else %}
                 {% set diff = now_min - start_min %}
                 {% set remaining = interval - (diff % interval) %}
-                {% if remaining == interval %}Now
+                {% if remaining == interval %}Maintenant
                 {% else %}
                   {% set h = (remaining // 60) | int %}
                   {% set m = (remaining % 60) | int %}
-                  {% if h > 0 %}in {{ h }}h {{ m }}min{% else %}in {{ m }} min{% endif %}
+                  {% if h > 0 %}dans {{ h }}h {{ m }}min{% else %}dans {{ m }} min{% endif %}
                 {% endif %}
               {% endif %}
             {% endif %}
+          {% endif %}
+
+      # ============================================================
+      #  Pump health — drift detection v1.0.5
+      #
+      #  Logique :
+      #  Au remplissage l'utilisateur saisit (optionnel) :
+      #    - volume restant avant remplissage
+      #    - volume ajouté
+      #
+      #  Volume consommé réel sur la période =
+      #    remaining_before + added - tank_volume_au_début
+      #    = remaining_before_refill + added_volume - (prev_remaining)
+      #
+      #  En pratique :
+      #    consumed = prev_remaining_before + added - remaining_before
+      #    (ce que la pompe a pompé = ce qu'il y avait + ce qu'on a mis - ce qu'il reste maintenant)
+      #
+      #  real_daily_dose = consumed / days_between_refills
+      #  drift_pct = (real - configured) / configured × 100
+      # ============================================================
+
+      dmd_p1_days_between_refills:
+        friendly_name: "Pump 1 : Days between refills"
+        unit_of_measurement: "j"
+        icon_template: mdi:calendar-range
+        value_template: >-
+          {% set last = states('input_datetime.dmd_p1_last_refill') %}
+          {% set prev = states('input_datetime.dmd_p1_prev_refill') %}
+          {% if last in ['unknown','unavailable','None'] or prev in ['unknown','unavailable','None'] %}
+            unknown
+          {% else %}
+            {{ ((as_datetime(last) - as_datetime(prev)).total_seconds() / 86400) | round(1) }}
+          {% endif %}
+
+      dmd_p1_real_daily_dose:
+        friendly_name: "Pump 1 : Real daily dose"
+        unit_of_measurement: "ml/j"
+        icon_template: mdi:chart-line
+        value_template: >-
+          {% set days = states('sensor.dmd_p1_days_between_refills') | float(-1) %}
+          {% set consumed = states('input_number.dmd_p1_volume_consumed_last_period') | float(0) %}
+          {% if days <= 0 or consumed <= 0 %}unknown
+          {% else %}{{ (consumed / days) | round(1) }}{% endif %}
+
+      dmd_p1_drift_pct:
+        friendly_name: "Pump 1 : Drift (%)"
+        unit_of_measurement: "%"
+        icon_template: mdi:chart-bell-curve
+        value_template: >-
+          {% set real = states('sensor.dmd_p1_real_daily_dose') | float(-1) %}
+          {% set configured = states('input_number.dmd_p1_daily_dose') | float(0) %}
+          {% if real < 0 or configured <= 0 %}unknown
+          {% else %}{{ ((real - configured) / configured * 100) | round(1) }}{% endif %}
+
+      dmd_p1_health_status:
+        friendly_name: "Pump 1 : Health"
+        icon_template: >-
+          {% set drift = states('sensor.dmd_p1_drift_pct') | float(0) | abs %}
+          {% set t = states('input_number.dmd_p1_drift_threshold') | float(15) %}
+          {% if states('sensor.dmd_p1_drift_pct') == 'unknown' %}mdi:help-circle
+          {% elif drift < t %}mdi:check-circle
+          {% elif drift < t * 2 %}mdi:alert-circle
+          {% else %}mdi:close-circle{% endif %}
+        value_template: >-
+          {% set drift = states('sensor.dmd_p1_drift_pct') %}
+          {% if drift == 'unknown' %}Pas de données
+          {% else %}
+            {% set d = drift | float(0) | abs %}
+            {% set t = states('input_number.dmd_p1_drift_threshold') | float(15) %}
+            {% if d < t %}OK
+            {% elif d < t * 2 %}Vérifier
+            {% else %}Recalibrer{% endif %}
+          {% endif %}
+
+      dmd_p2_days_between_refills:
+        friendly_name: "Pump 2 : Days between refills"
+        unit_of_measurement: "j"
+        icon_template: mdi:calendar-range
+        value_template: >-
+          {% set last = states('input_datetime.dmd_p2_last_refill') %}
+          {% set prev = states('input_datetime.dmd_p2_prev_refill') %}
+          {% if last in ['unknown','unavailable','None'] or prev in ['unknown','unavailable','None'] %}unknown
+          {% else %}{{ ((as_datetime(last) - as_datetime(prev)).total_seconds() / 86400) | round(1) }}{% endif %}
+
+      dmd_p2_real_daily_dose:
+        friendly_name: "Pump 2 : Real daily dose"
+        unit_of_measurement: "ml/j"
+        icon_template: mdi:chart-line
+        value_template: >-
+          {% set days = states('sensor.dmd_p2_days_between_refills') | float(-1) %}
+          {% set consumed = states('input_number.dmd_p2_volume_consumed_last_period') | float(0) %}
+          {% if days <= 0 or consumed <= 0 %}unknown
+          {% else %}{{ (consumed / days) | round(1) }}{% endif %}
+
+      dmd_p2_drift_pct:
+        friendly_name: "Pump 2 : Drift (%)"
+        unit_of_measurement: "%"
+        icon_template: mdi:chart-bell-curve
+        value_template: >-
+          {% set real = states('sensor.dmd_p2_real_daily_dose') | float(-1) %}
+          {% set configured = states('input_number.dmd_p2_daily_dose') | float(0) %}
+          {% if real < 0 or configured <= 0 %}unknown
+          {% else %}{{ ((real - configured) / configured * 100) | round(1) }}{% endif %}
+
+      dmd_p2_health_status:
+        friendly_name: "Pump 2 : Health"
+        icon_template: >-
+          {% set drift = states('sensor.dmd_p2_drift_pct') | float(0) | abs %}
+          {% set t = states('input_number.dmd_p2_drift_threshold') | float(15) %}
+          {% if states('sensor.dmd_p2_drift_pct') == 'unknown' %}mdi:help-circle
+          {% elif drift < t %}mdi:check-circle
+          {% elif drift < t * 2 %}mdi:alert-circle
+          {% else %}mdi:close-circle{% endif %}
+        value_template: >-
+          {% set drift = states('sensor.dmd_p2_drift_pct') %}
+          {% if drift == 'unknown' %}Pas de données
+          {% else %}
+            {% set d = drift | float(0) | abs %}
+            {% set t = states('input_number.dmd_p2_drift_threshold') | float(15) %}
+            {% if d < t %}OK
+            {% elif d < t * 2 %}Vérifier
+            {% else %}Recalibrer{% endif %}
+          {% endif %}
+
+      dmd_p3_days_between_refills:
+        friendly_name: "Pump 3 : Days between refills"
+        unit_of_measurement: "j"
+        icon_template: mdi:calendar-range
+        value_template: >-
+          {% set last = states('input_datetime.dmd_p3_last_refill') %}
+          {% set prev = states('input_datetime.dmd_p3_prev_refill') %}
+          {% if last in ['unknown','unavailable','None'] or prev in ['unknown','unavailable','None'] %}unknown
+          {% else %}{{ ((as_datetime(last) - as_datetime(prev)).total_seconds() / 86400) | round(1) }}{% endif %}
+
+      dmd_p3_real_daily_dose:
+        friendly_name: "Pump 3 : Real daily dose"
+        unit_of_measurement: "ml/j"
+        icon_template: mdi:chart-line
+        value_template: >-
+          {% set days = states('sensor.dmd_p3_days_between_refills') | float(-1) %}
+          {% set consumed = states('input_number.dmd_p3_volume_consumed_last_period') | float(0) %}
+          {% if days <= 0 or consumed <= 0 %}unknown
+          {% else %}{{ (consumed / days) | round(1) }}{% endif %}
+
+      dmd_p3_drift_pct:
+        friendly_name: "Pump 3 : Drift (%)"
+        unit_of_measurement: "%"
+        icon_template: mdi:chart-bell-curve
+        value_template: >-
+          {% set real = states('sensor.dmd_p3_real_daily_dose') | float(-1) %}
+          {% set configured = states('input_number.dmd_p3_daily_dose') | float(0) %}
+          {% if real < 0 or configured <= 0 %}unknown
+          {% else %}{{ ((real - configured) / configured * 100) | round(1) }}{% endif %}
+
+      dmd_p3_health_status:
+        friendly_name: "Pump 3 : Health"
+        icon_template: >-
+          {% set drift = states('sensor.dmd_p3_drift_pct') | float(0) | abs %}
+          {% set t = states('input_number.dmd_p3_drift_threshold') | float(15) %}
+          {% if states('sensor.dmd_p3_drift_pct') == 'unknown' %}mdi:help-circle
+          {% elif drift < t %}mdi:check-circle
+          {% elif drift < t * 2 %}mdi:alert-circle
+          {% else %}mdi:close-circle{% endif %}
+        value_template: >-
+          {% set drift = states('sensor.dmd_p3_drift_pct') %}
+          {% if drift == 'unknown' %}Pas de données
+          {% else %}
+            {% set d = drift | float(0) | abs %}
+            {% set t = states('input_number.dmd_p3_drift_threshold') | float(15) %}
+            {% if d < t %}OK
+            {% elif d < t * 2 %}Vérifier
+            {% else %}Recalibrer{% endif %}
+          {% endif %}
+
+      dmd_p4_days_between_refills:
+        friendly_name: "Pump 4 : Days between refills"
+        unit_of_measurement: "j"
+        icon_template: mdi:calendar-range
+        value_template: >-
+          {% set last = states('input_datetime.dmd_p4_last_refill') %}
+          {% set prev = states('input_datetime.dmd_p4_prev_refill') %}
+          {% if last in ['unknown','unavailable','None'] or prev in ['unknown','unavailable','None'] %}unknown
+          {% else %}{{ ((as_datetime(last) - as_datetime(prev)).total_seconds() / 86400) | round(1) }}{% endif %}
+
+      dmd_p4_real_daily_dose:
+        friendly_name: "Pump 4 : Real daily dose"
+        unit_of_measurement: "ml/j"
+        icon_template: mdi:chart-line
+        value_template: >-
+          {% set days = states('sensor.dmd_p4_days_between_refills') | float(-1) %}
+          {% set consumed = states('input_number.dmd_p4_volume_consumed_last_period') | float(0) %}
+          {% if days <= 0 or consumed <= 0 %}unknown
+          {% else %}{{ (consumed / days) | round(1) }}{% endif %}
+
+      dmd_p4_drift_pct:
+        friendly_name: "Pump 4 : Drift (%)"
+        unit_of_measurement: "%"
+        icon_template: mdi:chart-bell-curve
+        value_template: >-
+          {% set real = states('sensor.dmd_p4_real_daily_dose') | float(-1) %}
+          {% set configured = states('input_number.dmd_p4_daily_dose') | float(0) %}
+          {% if real < 0 or configured <= 0 %}unknown
+          {% else %}{{ ((real - configured) / configured * 100) | round(1) }}{% endif %}
+
+      dmd_p4_health_status:
+        friendly_name: "Pump 4 : Health"
+        icon_template: >-
+          {% set drift = states('sensor.dmd_p4_drift_pct') | float(0) | abs %}
+          {% set t = states('input_number.dmd_p4_drift_threshold') | float(15) %}
+          {% if states('sensor.dmd_p4_drift_pct') == 'unknown' %}mdi:help-circle
+          {% elif drift < t %}mdi:check-circle
+          {% elif drift < t * 2 %}mdi:alert-circle
+          {% else %}mdi:close-circle{% endif %}
+        value_template: >-
+          {% set drift = states('sensor.dmd_p4_drift_pct') %}
+          {% if drift == 'unknown' %}Pas de données
+          {% else %}
+            {% set d = drift | float(0) | abs %}
+            {% set t = states('input_number.dmd_p4_drift_threshold') | float(15) %}
+            {% if d < t %}OK
+            {% elif d < t * 2 %}Vérifier
+            {% else %}Recalibrer{% endif %}
           {% endif %}

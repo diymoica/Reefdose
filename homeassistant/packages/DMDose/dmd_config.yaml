@@ -1,34 +1,25 @@
-# ============================================================
-#  Copyright (c) 2026 DIY Moi Ca — diymoica.com
-#  License : Custom — personal use only, no commercial use
-#  See LICENSE file at github.com/diymoica/dmd
-# ============================================================
-
 input_text:
   dmd_p1_name:
     name: 'Pump 1 : Name'
-    initial: Pump 1
     min: 1
     max: 20
     icon: mdi:label-outline
   dmd_p2_name:
     name: 'Pump 2 : Name'
-    initial: Pump 2
     min: 1
     max: 20
     icon: mdi:label-outline
   dmd_p3_name:
     name: 'Pump 3 : Name'
-    initial: Pump 3
     min: 1
     max: 20
     icon: mdi:label-outline
   dmd_p4_name:
     name: 'Pump 4 : Name'
-    initial: Pump 4
     min: 1
     max: 20
     icon: mdi:label-outline
+
 input_datetime:
   dmd_p1_start_time:
     name: 'Pump 1 : Start time'
@@ -62,6 +53,47 @@ input_datetime:
     name: 'Pump 4 : End time'
     has_date: false
     has_time: true
+  dmd_p1_last_refill:
+    name: 'Pump 1 : Last refill date'
+    has_date: true
+    has_time: false
+    icon: mdi:calendar-check
+  dmd_p2_last_refill:
+    name: 'Pump 2 : Last refill date'
+    has_date: true
+    has_time: false
+    icon: mdi:calendar-check
+  dmd_p3_last_refill:
+    name: 'Pump 3 : Last refill date'
+    has_date: true
+    has_time: false
+    icon: mdi:calendar-check
+  dmd_p4_last_refill:
+    name: 'Pump 4 : Last refill date'
+    has_date: true
+    has_time: false
+    icon: mdi:calendar-check
+  dmd_p1_prev_refill:
+    name: 'Pump 1 : Previous refill date'
+    has_date: true
+    has_time: false
+    icon: mdi:calendar-arrow-left
+  dmd_p2_prev_refill:
+    name: 'Pump 2 : Previous refill date'
+    has_date: true
+    has_time: false
+    icon: mdi:calendar-arrow-left
+  dmd_p3_prev_refill:
+    name: 'Pump 3 : Previous refill date'
+    has_date: true
+    has_time: false
+    icon: mdi:calendar-arrow-left
+  dmd_p4_prev_refill:
+    name: 'Pump 4 : Previous refill date'
+    has_date: true
+    has_time: false
+    icon: mdi:calendar-arrow-left
+
 input_boolean:
   dmd_pause:
     name: Pause — All pumps
@@ -126,19 +158,51 @@ input_boolean:
   dmd_p1_full_day:
     name: 'Pump 1 : Full day dosing'
     icon: mdi:hours-24
-    initial: true
   dmd_p2_full_day:
     name: 'Pump 2 : Full day dosing'
     icon: mdi:hours-24
-    initial: true
   dmd_p3_full_day:
     name: 'Pump 3 : Full day dosing'
     icon: mdi:hours-24
-    initial: true
   dmd_p4_full_day:
     name: 'Pump 4 : Full day dosing'
     icon: mdi:hours-24
-    initial: true
+  dmd_safety_expert_mode:
+    name: 'Safety : Expert mode'
+    icon: mdi:shield-edit
+  dmd_p1_critical:
+    name: 'Pump 1 : Critical (hard watchdog stops all)'
+    icon: mdi:shield-alert
+  dmd_p2_critical:
+    name: 'Pump 2 : Critical (hard watchdog stops all)'
+    icon: mdi:shield-alert
+  dmd_p3_critical:
+    name: 'Pump 3 : Critical (hard watchdog stops all)'
+    icon: mdi:shield-alert
+  dmd_p4_critical:
+    name: 'Pump 4 : Critical (hard watchdog stops all)'
+    icon: mdi:shield-alert
+  # ============================================================
+  #  Verrous sécurité (v1.0.7)
+  #  dmd_safety_locked : activé par hard/ESP32/lock watchdog
+  #  Déverrouillage : bouton dashboard uniquement
+  # ============================================================
+  dmd_safety_locked:
+    name: 'Safety : System locked'
+    icon: mdi:lock-alert
+  dmd_p1_safety_locked:
+    name: 'Pump 1 : Safety locked'
+    icon: mdi:lock
+  dmd_p2_safety_locked:
+    name: 'Pump 2 : Safety locked'
+    icon: mdi:lock
+  dmd_p3_safety_locked:
+    name: 'Pump 3 : Safety locked'
+    icon: mdi:lock
+  dmd_p4_safety_locked:
+    name: 'Pump 4 : Safety locked'
+    icon: mdi:lock
+
 input_number:
   dmd_dose_delay:
     name: Mechanical delay between doses (s)
@@ -149,7 +213,7 @@ input_number:
     unit_of_measurement: s
     icon: mdi:timer-pause
   dmd_sim_interval:
-    name: "Simulation — interval between doses (min)"
+    name: Simulation — interval between doses (min)
     min: 1
     max: 10
     step: 1
@@ -274,6 +338,14 @@ input_number:
     step: 10
     unit_of_measurement: ml
     icon: mdi:alert
+  dmd_p2_max_volume:
+    name: 'Pump 2 : Max volume per dose (safety)'
+    min: 1
+    max: 500
+    step: 1
+    mode: box
+    unit_of_measurement: ml
+    icon: mdi:shield-alert
   dmd_p3_daily_dose:
     name: 'Pump 3 : Daily dose'
     min: 1
@@ -333,6 +405,14 @@ input_number:
     step: 10
     unit_of_measurement: ml
     icon: mdi:alert
+  dmd_p3_max_volume:
+    name: 'Pump 3 : Max volume per dose (safety)'
+    min: 1
+    max: 500
+    step: 1
+    mode: box
+    unit_of_measurement: ml
+    icon: mdi:shield-alert
   dmd_p4_daily_dose:
     name: 'Pump 4 : Daily dose'
     min: 1
@@ -392,6 +472,14 @@ input_number:
     step: 10
     unit_of_measurement: ml
     icon: mdi:alert
+  dmd_p4_max_volume:
+    name: 'Pump 4 : Max volume per dose (safety)'
+    min: 1
+    max: 500
+    step: 1
+    mode: box
+    unit_of_measurement: ml
+    icon: mdi:shield-alert
   dmd_delay_p1_p2:
     name: Compatibility delay P1-P2
     min: 0
@@ -440,3 +528,288 @@ input_number:
     unit_of_measurement: min
     icon: mdi:timer-pause
     mode: box
+  # ============================================================
+  #  Watchdog multiplicateurs globaux (existants, mis à jour v1.0.7)
+  # ============================================================
+  dmd_safety_esp32_mult:
+    name: 'Safety : ESP32 hardware timeout multiplier'
+    min: 1
+    max: 20
+    step: 1
+    mode: slider
+    icon: mdi:shield-lock
+  dmd_safety_soft_mult:
+    name: 'Safety : Soft watchdog multiplier (HA)'
+    min: 1
+    max: 20
+    step: 1
+    mode: slider
+    icon: mdi:shield-half-full
+  dmd_safety_hard_mult:
+    name: 'Safety : Hard watchdog multiplier (HA)'
+    min: 1
+    max: 20
+    step: 1
+    mode: slider
+    icon: mdi:shield-alert
+  dmd_p1_remaining_before_refill:
+    name: 'Pump 1 : Remaining before refill'
+    min: 0
+    max: 5000
+    step: 1
+    mode: box
+    unit_of_measurement: ml
+    icon: mdi:cup-water
+  dmd_p2_remaining_before_refill:
+    name: 'Pump 2 : Remaining before refill'
+    min: 0
+    max: 5000
+    step: 1
+    mode: box
+    unit_of_measurement: ml
+    icon: mdi:cup-water
+  dmd_p3_remaining_before_refill:
+    name: 'Pump 3 : Remaining before refill'
+    min: 0
+    max: 5000
+    step: 1
+    mode: box
+    unit_of_measurement: ml
+    icon: mdi:cup-water
+  dmd_p4_remaining_before_refill:
+    name: 'Pump 4 : Remaining before refill'
+    min: 0
+    max: 5000
+    step: 1
+    mode: box
+    unit_of_measurement: ml
+    icon: mdi:cup-water
+  dmd_p1_added_volume:
+    name: 'Pump 1 : Volume added at refill'
+    min: 0
+    max: 5000
+    step: 1
+    mode: box
+    unit_of_measurement: ml
+    icon: mdi:plus-box
+  dmd_p2_added_volume:
+    name: 'Pump 2 : Volume added at refill'
+    min: 0
+    max: 5000
+    step: 1
+    mode: box
+    unit_of_measurement: ml
+    icon: mdi:plus-box
+  dmd_p3_added_volume:
+    name: 'Pump 3 : Volume added at refill'
+    min: 0
+    max: 5000
+    step: 1
+    mode: box
+    unit_of_measurement: ml
+    icon: mdi:plus-box
+  dmd_p4_added_volume:
+    name: 'Pump 4 : Volume added at refill'
+    min: 0
+    max: 5000
+    step: 1
+    mode: box
+    unit_of_measurement: ml
+    icon: mdi:plus-box
+  dmd_p1_drift_threshold:
+    name: 'Pump 1 : Drift alert threshold (%)'
+    min: 5
+    max: 50
+    step: 5
+    mode: slider
+    unit_of_measurement: '%'
+    icon: mdi:chart-bell-curve
+  dmd_p2_drift_threshold:
+    name: 'Pump 2 : Drift alert threshold (%)'
+    min: 5
+    max: 50
+    step: 5
+    mode: slider
+    unit_of_measurement: '%'
+    icon: mdi:chart-bell-curve
+  dmd_p3_drift_threshold:
+    name: 'Pump 3 : Drift alert threshold (%)'
+    min: 5
+    max: 50
+    step: 5
+    mode: slider
+    unit_of_measurement: '%'
+    icon: mdi:chart-bell-curve
+  dmd_p4_drift_threshold:
+    name: 'Pump 4 : Drift alert threshold (%)'
+    min: 5
+    max: 50
+    step: 5
+    mode: slider
+    unit_of_measurement: '%'
+    icon: mdi:chart-bell-curve
+  dmd_p1_volume_consumed_last_period:
+    name: 'Pump 1 : Volume consumed last period'
+    min: 0
+    max: 10000
+    step: 1
+    mode: box
+    unit_of_measurement: ml
+    icon: mdi:chart-bar
+  dmd_p2_volume_consumed_last_period:
+    name: 'Pump 2 : Volume consumed last period'
+    min: 0
+    max: 10000
+    step: 1
+    mode: box
+    unit_of_measurement: ml
+    icon: mdi:chart-bar
+  dmd_p3_volume_consumed_last_period:
+    name: 'Pump 3 : Volume consumed last period'
+    min: 0
+    max: 10000
+    step: 1
+    mode: box
+    unit_of_measurement: ml
+    icon: mdi:chart-bar
+  dmd_p4_volume_consumed_last_period:
+    name: 'Pump 4 : Volume consumed last period'
+    min: 0
+    max: 10000
+    step: 1
+    mode: box
+    unit_of_measurement: ml
+    icon: mdi:chart-bar
+
+# ============================================================
+  #  Watchdog multiplicateurs globaux (v1.0.7)
+  #  Tous les timeouts = dose_duration × multiplicateur
+  #  Hiérarchie obligatoire : soft < hard < esp32 < lock
+  # ============================================================
+  dmd_safety_lock_mult:
+    name: 'Safety : Lock watchdog multiplier (×dose)'
+    min: 1
+    max: 30
+    step: 1
+    mode: slider
+    icon: mdi:lock-clock
+
+  # ============================================================
+  #  Watchdog overrides par pompe (v1.0.7)
+  #  Valeur 0 = utiliser le multiplicateur global
+  # ============================================================
+  dmd_p1_safety_soft_mult:
+    name: 'Pump 1 : Soft watchdog override (0=global)'
+    min: 0
+    max: 20
+    step: 1
+    mode: box
+    icon: mdi:shield-half-full
+  dmd_p2_safety_soft_mult:
+    name: 'Pump 2 : Soft watchdog override (0=global)'
+    min: 0
+    max: 20
+    step: 1
+    mode: box
+    icon: mdi:shield-half-full
+  dmd_p3_safety_soft_mult:
+    name: 'Pump 3 : Soft watchdog override (0=global)'
+    min: 0
+    max: 20
+    step: 1
+    mode: box
+    icon: mdi:shield-half-full
+  dmd_p4_safety_soft_mult:
+    name: 'Pump 4 : Soft watchdog override (0=global)'
+    min: 0
+    max: 20
+    step: 1
+    mode: box
+    icon: mdi:shield-half-full
+
+  dmd_p1_safety_hard_mult:
+    name: 'Pump 1 : Hard watchdog override (0=global)'
+    min: 0
+    max: 20
+    step: 1
+    mode: box
+    icon: mdi:shield-alert
+  dmd_p2_safety_hard_mult:
+    name: 'Pump 2 : Hard watchdog override (0=global)'
+    min: 0
+    max: 20
+    step: 1
+    mode: box
+    icon: mdi:shield-alert
+  dmd_p3_safety_hard_mult:
+    name: 'Pump 3 : Hard watchdog override (0=global)'
+    min: 0
+    max: 20
+    step: 1
+    mode: box
+    icon: mdi:shield-alert
+  dmd_p4_safety_hard_mult:
+    name: 'Pump 4 : Hard watchdog override (0=global)'
+    min: 0
+    max: 20
+    step: 1
+    mode: box
+    icon: mdi:shield-alert
+
+  dmd_p1_safety_esp32_mult:
+    name: 'Pump 1 : ESP32 watchdog override (0=global)'
+    min: 0
+    max: 20
+    step: 1
+    mode: box
+    icon: mdi:shield-lock
+  dmd_p2_safety_esp32_mult:
+    name: 'Pump 2 : ESP32 watchdog override (0=global)'
+    min: 0
+    max: 20
+    step: 1
+    mode: box
+    icon: mdi:shield-lock
+  dmd_p3_safety_esp32_mult:
+    name: 'Pump 3 : ESP32 watchdog override (0=global)'
+    min: 0
+    max: 20
+    step: 1
+    mode: box
+    icon: mdi:shield-lock
+  dmd_p4_safety_esp32_mult:
+    name: 'Pump 4 : ESP32 watchdog override (0=global)'
+    min: 0
+    max: 20
+    step: 1
+    mode: box
+    icon: mdi:shield-lock
+
+  dmd_p1_safety_lock_mult:
+    name: 'Pump 1 : Lock watchdog override (0=global)'
+    min: 0
+    max: 30
+    step: 1
+    mode: box
+    icon: mdi:lock-clock
+  dmd_p2_safety_lock_mult:
+    name: 'Pump 2 : Lock watchdog override (0=global)'
+    min: 0
+    max: 30
+    step: 1
+    mode: box
+    icon: mdi:lock-clock
+  dmd_p3_safety_lock_mult:
+    name: 'Pump 3 : Lock watchdog override (0=global)'
+    min: 0
+    max: 30
+    step: 1
+    mode: box
+    icon: mdi:lock-clock
+  dmd_p4_safety_lock_mult:
+    name: 'Pump 4 : Lock watchdog override (0=global)'
+    min: 0
+    max: 30
+    step: 1
+    mode: box
+    icon: mdi:lock-clock

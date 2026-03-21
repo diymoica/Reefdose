@@ -1,7 +1,7 @@
 # ============================================================
 #  Copyright (c) 2026 DIY Moi Ca — diymoica.com
 #  License : Custom — personal use only, no commercial use
-#  See LICENSE file at github.com/diymoica/dmd
+#  See LICENSE file at github.com/diymoica/DMdose
 # ============================================================
 
 ##################################################################################################################################
@@ -23,7 +23,12 @@ automation:
       - platform: time
         at: "00:00:00"
     action:
-      - service: counter.reset
+      # Fix v1.0.6 — attendre la fin d'une dose en cours avant de reset
+      - wait_template: "{{ not is_state('input_boolean.dmd_dosing', 'on') }}"
+        timeout:
+          seconds: 120
+        continue_on_timeout: true
+      - action: counter.reset
         target:
           entity_id:
             - counter.dmd_p1_daily_count
@@ -31,7 +36,11 @@ automation:
             - counter.dmd_p3_daily_count
             - counter.dmd_p4_daily_count
 
-  - alias: "DIY my Dose : Offline notification"
+  # --- Offline alert + auto-pause (v1.0.0) ---
+  # Replaces previous dmd_notify_offline (notification only)
+  # Pauses all dosing automations when ESP32 is unreachable
+  # User must manually re-enable dmd_pause when ESP32 is back
+  - alias: "DIY my Dose : ESP32 offline — pause and notify"
     id: dmd_notify_offline
     trigger:
       - platform: state
@@ -40,10 +49,15 @@ automation:
         for:
           minutes: 2
     action:
-      - service: notify.dmd_admin
+      - action: input_boolean.turn_on
+        target:
+          entity_id: input_boolean.dmd_pause
+      - action: notify.dmd_admin
         data:
-          title: "⚠️ DIY my Dose offline"
-          message: "The doser is not responding. Check WiFi connection."
+          title: "🚨 DmD TEST — ESP32 offline"
+          message: >-
+            Dosing paused automatically. Check WiFi and ESP32.
+            Re-enable dosing manually once the device is back online.
 
   - alias: "DIY my Dose : Pump 1 tank low alert"
     id: dmd_alert_tank_p1
@@ -56,10 +70,10 @@ automation:
       - condition: template
         value_template: "{{ states('input_number.dmd_p1_tank_remaining') | float(0) > 0 }}"
     action:
-      - service: notify.dmd_admin
+      - action: notify.dmd_admin
         data:
           title: >-
-            🪣 {{ states('input_text.dmd_p1_name') }} reservoir low
+            🪣 DmD TEST — {{ states('input_text.dmd_p1_name') }} reservoir low
           message: >-
             {{ states('input_number.dmd_p1_tank_remaining') | round(0) }} ml remaining ({{ states('sensor.dmd_p1_days_remaining') }} days).
   - alias: "DIY my Dose : Pump 2 tank low alert"
@@ -73,10 +87,10 @@ automation:
       - condition: template
         value_template: "{{ states('input_number.dmd_p2_tank_remaining') | float(0) > 0 }}"
     action:
-      - service: notify.dmd_admin
+      - action: notify.dmd_admin
         data:
           title: >-
-            🪣 {{ states('input_text.dmd_p2_name') }} reservoir low
+            🪣 DmD TEST — {{ states('input_text.dmd_p2_name') }} reservoir low
           message: >-
             {{ states('input_number.dmd_p2_tank_remaining') | round(0) }} ml remaining ({{ states('sensor.dmd_p2_days_remaining') }} days).
   - alias: "DIY my Dose : Pump 3 tank low alert"
@@ -90,10 +104,10 @@ automation:
       - condition: template
         value_template: "{{ states('input_number.dmd_p3_tank_remaining') | float(0) > 0 }}"
     action:
-      - service: notify.dmd_admin
+      - action: notify.dmd_admin
         data:
           title: >-
-            🪣 {{ states('input_text.dmd_p3_name') }} reservoir low
+            🪣 DmD TEST — {{ states('input_text.dmd_p3_name') }} reservoir low
           message: >-
             {{ states('input_number.dmd_p3_tank_remaining') | round(0) }} ml remaining ({{ states('sensor.dmd_p3_days_remaining') }} days).
   - alias: "DIY my Dose : Pump 4 tank low alert"
@@ -107,10 +121,10 @@ automation:
       - condition: template
         value_template: "{{ states('input_number.dmd_p4_tank_remaining') | float(0) > 0 }}"
     action:
-      - service: notify.dmd_admin
+      - action: notify.dmd_admin
         data:
           title: >-
-            🪣 {{ states('input_text.dmd_p4_name') }} reservoir low
+            🪣 DmD TEST — {{ states('input_text.dmd_p4_name') }} reservoir low
           message: >-
             {{ states('input_number.dmd_p4_tank_remaining') | round(0) }} ml remaining ({{ states('sensor.dmd_p4_days_remaining') }} days).
 
@@ -122,6 +136,9 @@ automation:
     condition:
       - condition: state
         entity_id: input_boolean.dmd_pause
+        state: "off"
+      - condition: state
+        entity_id: input_boolean.dmd_safety_locked
         state: "off"
       - condition: state
         entity_id: input_boolean.dmd_p1_auto
@@ -152,6 +169,10 @@ automation:
       - condition: template
         value_template: "{{ states('sensor.dmd_p1_window_ok') == 'OK' }}"
       - condition: template
+        alias: "Max doses journalières non atteint"
+        value_template: >-
+          {{ states('counter.dmd_p1_daily_count') | int(0) < states('input_number.dmd_p1_frequency') | int(1) }}
+      - condition: template
         value_template: >-
           {%- if is_state('input_boolean.dmd_sim_mode', 'on') %}
             {{ now().minute % (states('input_number.dmd_sim_interval') | int(2)) == 0 }}
@@ -176,7 +197,7 @@ automation:
             {% endif %}
           {%- endif %}
     action:
-      - service: script.dmd_execute_dose
+      - action: script.dmd_execute_dose
         data:
           switch_id: switch.dmd_pompe_1
           duree_s: "{{ states('sensor.dmd_p1_dose_duration') | int }}"
@@ -197,6 +218,9 @@ automation:
         entity_id: input_boolean.dmd_pause
         state: "off"
       - condition: state
+        entity_id: input_boolean.dmd_safety_locked
+        state: "off"
+      - condition: state
         entity_id: input_boolean.dmd_p2_auto
         state: "on"
       - condition: state
@@ -204,7 +228,6 @@ automation:
         state: "Online"
       - condition: template
         value_template: >-
-          {#- Si manual_resets_cycle est ON, vérifier que le délai depuis la dernière dose est >= interval #}
           {%- if is_state('input_boolean.dmd_p2_manual_resets_cycle', 'on') %}
             {%- set last = states('input_datetime.dmd_p2_last_dose') %}
             {%- if last in ['unknown', 'unavailable', 'None'] %}true
@@ -224,6 +247,10 @@ automation:
           {%- endif %}
       - condition: template
         value_template: "{{ states('sensor.dmd_p2_window_ok') == 'OK' }}"
+      - condition: template
+        alias: "Max doses journalières non atteint"
+        value_template: >-
+          {{ states('counter.dmd_p2_daily_count') | int(0) < states('input_number.dmd_p2_frequency') | int(1) }}
       - condition: template
         value_template: >-
           {%- if is_state('input_boolean.dmd_sim_mode', 'on') %}
@@ -249,7 +276,7 @@ automation:
             {% endif %}
           {%- endif %}
     action:
-      - service: script.dmd_execute_dose
+      - action: script.dmd_execute_dose
         data:
           switch_id: switch.dmd_pompe_2
           duree_s: "{{ states('sensor.dmd_p2_dose_duration') | int }}"
@@ -270,6 +297,9 @@ automation:
         entity_id: input_boolean.dmd_pause
         state: "off"
       - condition: state
+        entity_id: input_boolean.dmd_safety_locked
+        state: "off"
+      - condition: state
         entity_id: input_boolean.dmd_p3_auto
         state: "on"
       - condition: state
@@ -277,7 +307,6 @@ automation:
         state: "Online"
       - condition: template
         value_template: >-
-          {#- Si manual_resets_cycle est ON, vérifier que le délai depuis la dernière dose est >= interval #}
           {%- if is_state('input_boolean.dmd_p3_manual_resets_cycle', 'on') %}
             {%- set last = states('input_datetime.dmd_p3_last_dose') %}
             {%- if last in ['unknown', 'unavailable', 'None'] %}true
@@ -297,6 +326,10 @@ automation:
           {%- endif %}
       - condition: template
         value_template: "{{ states('sensor.dmd_p3_window_ok') == 'OK' }}"
+      - condition: template
+        alias: "Max doses journalières non atteint"
+        value_template: >-
+          {{ states('counter.dmd_p3_daily_count') | int(0) < states('input_number.dmd_p3_frequency') | int(1) }}
       - condition: template
         value_template: >-
           {%- if is_state('input_boolean.dmd_sim_mode', 'on') %}
@@ -322,7 +355,7 @@ automation:
             {% endif %}
           {%- endif %}
     action:
-      - service: script.dmd_execute_dose
+      - action: script.dmd_execute_dose
         data:
           switch_id: switch.dmd_pompe_3
           duree_s: "{{ states('sensor.dmd_p3_dose_duration') | int }}"
@@ -343,6 +376,9 @@ automation:
         entity_id: input_boolean.dmd_pause
         state: "off"
       - condition: state
+        entity_id: input_boolean.dmd_safety_locked
+        state: "off"
+      - condition: state
         entity_id: input_boolean.dmd_p4_auto
         state: "on"
       - condition: state
@@ -350,7 +386,6 @@ automation:
         state: "Online"
       - condition: template
         value_template: >-
-          {#- Si manual_resets_cycle est ON, vérifier que le délai depuis la dernière dose est >= interval #}
           {%- if is_state('input_boolean.dmd_p4_manual_resets_cycle', 'on') %}
             {%- set last = states('input_datetime.dmd_p4_last_dose') %}
             {%- if last in ['unknown', 'unavailable', 'None'] %}true
@@ -370,6 +405,10 @@ automation:
           {%- endif %}
       - condition: template
         value_template: "{{ states('sensor.dmd_p4_window_ok') == 'OK' }}"
+      - condition: template
+        alias: "Max doses journalières non atteint"
+        value_template: >-
+          {{ states('counter.dmd_p4_daily_count') | int(0) < states('input_number.dmd_p4_frequency') | int(1) }}
       - condition: template
         value_template: >-
           {%- if is_state('input_boolean.dmd_sim_mode', 'on') %}
@@ -395,7 +434,7 @@ automation:
             {% endif %}
           {%- endif %}
     action:
-      - service: script.dmd_execute_dose
+      - action: script.dmd_execute_dose
         data:
           switch_id: switch.dmd_pompe_4
           duree_s: "{{ states('sensor.dmd_p4_dose_duration') | int }}"
@@ -427,17 +466,17 @@ automation:
         value_template: >-
           {{ now().minute == states('input_number.dmd_p1_offset_min') | int }}
     action:
-      - service: input_number.set_value
+      - action: number.set_value
         target:
           entity_id: input_number.dmd_p1_missed_doses
         data:
           value: "{{ (states('input_number.dmd_p1_missed_doses') | float(0) + 1) | round(0) }}"
-      - service: notify.dmd_admin
+      - action: notify.dmd_admin
         data:
           title: >-
-            ❌ {{ states('input_text.dmd_p1_name') }} dose missed
+            ❌ DmD TEST — {{ states('input_text.dmd_p1_name') }} dose missed
           message: >-
-            {{ states('input_number.dmd_p4_tank_remaining') | round(0) }} ml remaining ({{ states('sensor.dmd_p4_days_remaining') }} days).
+            {{ states('input_number.dmd_p1_tank_remaining') | round(0) }} ml remaining ({{ states('sensor.dmd_p1_days_remaining') }} days).
 
   - alias: "DIY my Dose : Missed dose Pump 2"
     id: dmd_missed_p2
@@ -460,15 +499,15 @@ automation:
         value_template: >-
           {{ now().minute == states('input_number.dmd_p2_offset_min') | int }}
     action:
-      - service: input_number.set_value
+      - action: number.set_value
         target:
           entity_id: input_number.dmd_p2_missed_doses
         data:
           value: "{{ (states('input_number.dmd_p2_missed_doses') | float(0) + 1) | round(0) }}"
-      - service: notify.dmd_admin
+      - action: notify.dmd_admin
         data:
           title: >-
-            ❌ {{ states('input_text.dmd_p2_name') }} dose missed
+            ❌ DmD TEST — {{ states('input_text.dmd_p2_name') }} dose missed
           message: >-
             Automatic dose was not triggered. Check pump status and settings.
 
@@ -493,15 +532,15 @@ automation:
         value_template: >-
           {{ now().minute == states('input_number.dmd_p3_offset_min') | int }}
     action:
-      - service: input_number.set_value
+      - action: number.set_value
         target:
           entity_id: input_number.dmd_p3_missed_doses
         data:
           value: "{{ (states('input_number.dmd_p3_missed_doses') | float(0) + 1) | round(0) }}"
-      - service: notify.dmd_admin
+      - action: notify.dmd_admin
         data:
           title: >-
-            ❌ {{ states('input_text.dmd_p3_name') }} dose missed
+            ❌ DmD TEST — {{ states('input_text.dmd_p3_name') }} dose missed
           message: >-
             Automatic dose was not triggered. Check pump status and settings.
 
@@ -526,15 +565,15 @@ automation:
         value_template: >-
           {{ now().minute == states('input_number.dmd_p4_offset_min') | int }}
     action:
-      - service: input_number.set_value
+      - action: number.set_value
         target:
           entity_id: input_number.dmd_p4_missed_doses
         data:
           value: "{{ (states('input_number.dmd_p4_missed_doses') | float(0) + 1) | round(0) }}"
-      - service: notify.dmd_admin
+      - action: notify.dmd_admin
         data:
           title: >-
-            ❌ {{ states('input_text.dmd_p4_name') }} dose missed
+            ❌ DmD TEST — {{ states('input_text.dmd_p4_name') }} dose missed
           message: >-
             Automatic dose was not triggered. Check pump status and settings.
 
@@ -552,7 +591,7 @@ automation:
         entity_id: sensor.dmd_status
         state: "Online"
     action:
-      - service: script.dmd_calibration_p1
+      - action: script.dmd_calibration_p1
 
   - alias: "DIY my Dose : Start calibration Pump 2"
     id: dmd_start_calib_p2
@@ -568,7 +607,7 @@ automation:
         entity_id: sensor.dmd_status
         state: "Online"
     action:
-      - service: script.dmd_calibration_p2
+      - action: script.dmd_calibration_p2
 
   - alias: "DIY my Dose : Start calibration Pump 3"
     id: dmd_start_calib_p3
@@ -584,7 +623,7 @@ automation:
         entity_id: sensor.dmd_status
         state: "Online"
     action:
-      - service: script.dmd_calibration_p3
+      - action: script.dmd_calibration_p3
 
   - alias: "DIY my Dose : Start calibration Pump 4"
     id: dmd_start_calib_p4
@@ -600,7 +639,7 @@ automation:
         entity_id: sensor.dmd_status
         state: "Online"
     action:
-      - service: script.dmd_calibration_p4
+      - action: script.dmd_calibration_p4
 
   - alias: "DIY my Dose : Deactivate calib Pump 1 when auto off"
     id: dmd_auto_deactivate_calib_p1
@@ -609,7 +648,7 @@ automation:
         entity_id: input_boolean.dmd_p1_auto
         to: "off"
     action:
-      - service: input_boolean.turn_off
+      - action: input_boolean.turn_off
         target:
           entity_id: input_boolean.dmd_p1_calib_mode
 
@@ -620,7 +659,7 @@ automation:
         entity_id: input_boolean.dmd_p2_auto
         to: "off"
     action:
-      - service: input_boolean.turn_off
+      - action: input_boolean.turn_off
         target:
           entity_id: input_boolean.dmd_p2_calib_mode
 
@@ -631,7 +670,7 @@ automation:
         entity_id: input_boolean.dmd_p3_auto
         to: "off"
     action:
-      - service: input_boolean.turn_off
+      - action: input_boolean.turn_off
         target:
           entity_id: input_boolean.dmd_p3_calib_mode
 
@@ -642,7 +681,7 @@ automation:
         entity_id: input_boolean.dmd_p4_auto
         to: "off"
     action:
-      - service: input_boolean.turn_off
+      - action: input_boolean.turn_off
         target:
           entity_id: input_boolean.dmd_p4_calib_mode
 
@@ -652,7 +691,19 @@ automation:
       - platform: homeassistant
         event: start
     action:
-      - service: input_boolean.turn_off
+      # Fix v1.0.6 — couper les pompes encore ON avant de libérer le verrou
+      - delay:
+          seconds: 3
+      - action: switch.turn_off
+        target:
+          entity_id:
+            - switch.dmd_pompe_1
+            - switch.dmd_pompe_2
+            - switch.dmd_pompe_3
+            - switch.dmd_pompe_4
+      - delay:
+          seconds: 2
+      - action: input_boolean.turn_off
         target:
           entity_id: input_boolean.dmd_dosing
 
@@ -663,17 +714,17 @@ automation:
         entity_id: input_boolean.dmd_sim_mode
         to: "off"
     action:
-      - service: input_boolean.turn_off
+      - action: input_boolean.turn_off
         target:
           entity_id: input_boolean.dmd_sim_real_pumps
-      - service: input_number.set_value
+      - action: number.set_value
         target:
           entity_id: input_number.dmd_sim_interval
         data:
           value: 3
       - delay:
           seconds: 2
-      - service: automation.reload
+      - action: automation.reload
 
   - alias: "DIY my Dose : Auto-calculate offsets from compatibility matrix"
     id: dmd_auto_calculate_offsets
@@ -690,19 +741,19 @@ automation:
         event: start
     action:
       # P1 toujours offset 0
-      - service: input_number.set_value
+      - action: number.set_value
         target:
           entity_id: input_number.dmd_p1_offset_min
         data:
           value: 0
       # P2 offset = délai P1→P2
-      - service: input_number.set_value
+      - action: number.set_value
         target:
           entity_id: input_number.dmd_p2_offset_min
         data:
           value: "{{ states('input_number.dmd_delay_p1_p2') | int(0) }}"
       # P3 offset = max des contraintes réelles (ignorées si délai = 0)
-      - service: input_number.set_value
+      - action: number.set_value
         target:
           entity_id: input_number.dmd_p3_offset_min
         data:
@@ -714,8 +765,558 @@ automation:
             {% set from_p2 = (d23 + d12) if d23 > 0 else 0 %}
             {{ [from_p1, from_p2] | max }}
       # P4 offset = délai P1→P4
-      - service: input_number.set_value
+      - action: number.set_value
         target:
           entity_id: input_number.dmd_p4_offset_min
         data:
           value: "{{ states('input_number.dmd_delay_p1_p4') | int(0) }}"
+
+  ##################################################################################################################################
+  #                                                                                                                                #
+  #   SAFETY — v1.0.0                                                                                                             #
+  #                                                                                                                                #
+  #   Watchdog soft  : pump runs > duration×2  → stop pump + warning notification                                                #
+  #   Watchdog hard  : pump runs > duration×5  → stop ALL pumps + pause dosing + urgent notification                             #
+  #   Push max_duration : updates ESP32 hardware timeout when config changes                                                      #
+  #                                                                                                                                #
+  ##################################################################################################################################
+
+  # --- Watchdog SOFT — Pump 1 ---
+  # Fires if pump stays ON more than 2× its expected dose duration.
+  # mode: restart ensures the timer resets if the pump is triggered again.
+  - alias: "DIY my Dose : Watchdog soft — Pump 1"
+    id: dmd_watchdog_soft_p1
+    mode: restart
+    trigger:
+      - platform: state
+        entity_id: switch.dmd_pompe_1
+        to: "on"
+    action:
+      - wait_template: "{{ is_state('switch.dmd_pompe_1', 'off') }}"
+        timeout:
+          seconds: "{{ states('sensor.dmd_p1_soft_timeout') | int(20) }}"
+        continue_on_timeout: true
+      - condition: template
+        value_template: "{{ not wait.completed }}"
+      - action: switch.turn_off
+        target:
+          entity_id: switch.dmd_pompe_1
+      # v1.0.7 — verrou par pompe + notification
+      - action: input_boolean.turn_on
+        target:
+          entity_id: input_boolean.dmd_p1_safety_locked
+      - action: counter.increment
+        target:
+          entity_id: counter.dmd_p1_daily_count
+      - action: notify.dmd_admin
+        data:
+          title: "⚠️ DmD TEST — {{ states('input_text.dmd_p1_name') }} watchdog soft"
+          message: >-
+            La pompe a tourné trop longtemps (limite soft : {{ states('sensor.dmd_p1_soft_timeout') }}s).
+            Coupée automatiquement. 1 dose surdosée déduite du compteur.
+            Vérifiez la pompe et les réglages de sécurité.
+
+  # --- Watchdog SOFT — Pump 2 ---
+  - alias: "DIY my Dose : Watchdog soft — Pump 2"
+    id: dmd_watchdog_soft_p2
+    mode: restart
+    trigger:
+      - platform: state
+        entity_id: switch.dmd_pompe_2
+        to: "on"
+    action:
+      - wait_template: "{{ is_state('switch.dmd_pompe_2', 'off') }}"
+        timeout:
+          seconds: "{{ states('sensor.dmd_p2_soft_timeout') | int(20) }}"
+        continue_on_timeout: true
+      - condition: template
+        value_template: "{{ not wait.completed }}"
+      - action: switch.turn_off
+        target:
+          entity_id: switch.dmd_pompe_2
+      # v1.0.7 — verrou par pompe + notification
+      - action: input_boolean.turn_on
+        target:
+          entity_id: input_boolean.dmd_p2_safety_locked
+      - action: counter.increment
+        target:
+          entity_id: counter.dmd_p2_daily_count
+      - action: notify.dmd_admin
+        data:
+          title: "⚠️ DmD TEST — {{ states('input_text.dmd_p2_name') }} watchdog soft"
+          message: >-
+            La pompe a tourné trop longtemps (limite soft : {{ states('sensor.dmd_p2_soft_timeout') }}s).
+            Coupée automatiquement. 1 dose surdosée déduite du compteur.
+            Vérifiez la pompe et les réglages de sécurité.
+
+  # --- Watchdog SOFT — Pump 3 ---
+  - alias: "DIY my Dose : Watchdog soft — Pump 3"
+    id: dmd_watchdog_soft_p3
+    mode: restart
+    trigger:
+      - platform: state
+        entity_id: switch.dmd_pompe_3
+        to: "on"
+    action:
+      - wait_template: "{{ is_state('switch.dmd_pompe_3', 'off') }}"
+        timeout:
+          seconds: "{{ states('sensor.dmd_p3_soft_timeout') | int(20) }}"
+        continue_on_timeout: true
+      - condition: template
+        value_template: "{{ not wait.completed }}"
+      - action: switch.turn_off
+        target:
+          entity_id: switch.dmd_pompe_3
+      # v1.0.7 — verrou par pompe + notification
+      - action: input_boolean.turn_on
+        target:
+          entity_id: input_boolean.dmd_p3_safety_locked
+      - action: counter.increment
+        target:
+          entity_id: counter.dmd_p3_daily_count
+      - action: notify.dmd_admin
+        data:
+          title: "⚠️ DmD TEST — {{ states('input_text.dmd_p3_name') }} watchdog soft"
+          message: >-
+            La pompe a tourné trop longtemps (limite soft : {{ states('sensor.dmd_p3_soft_timeout') }}s).
+            Coupée automatiquement. 1 dose surdosée déduite du compteur.
+            Vérifiez la pompe et les réglages de sécurité.
+
+  # --- Watchdog SOFT — Pump 4 ---
+  - alias: "DIY my Dose : Watchdog soft — Pump 4"
+    id: dmd_watchdog_soft_p4
+    mode: restart
+    trigger:
+      - platform: state
+        entity_id: switch.dmd_pompe_4
+        to: "on"
+    action:
+      - wait_template: "{{ is_state('switch.dmd_pompe_4', 'off') }}"
+        timeout:
+          seconds: "{{ states('sensor.dmd_p4_soft_timeout') | int(20) }}"
+        continue_on_timeout: true
+      - condition: template
+        value_template: "{{ not wait.completed }}"
+      - action: switch.turn_off
+        target:
+          entity_id: switch.dmd_pompe_4
+      # v1.0.7 — verrou par pompe + notification
+      - action: input_boolean.turn_on
+        target:
+          entity_id: input_boolean.dmd_p4_safety_locked
+      - action: counter.increment
+        target:
+          entity_id: counter.dmd_p4_daily_count
+      - action: notify.dmd_admin
+        data:
+          title: "⚠️ DmD TEST — {{ states('input_text.dmd_p4_name') }} watchdog soft"
+          message: >-
+            La pompe a tourné trop longtemps (limite soft : {{ states('sensor.dmd_p4_soft_timeout') }}s).
+            Coupée automatiquement. 1 dose surdosée déduite du compteur.
+            Vérifiez la pompe et les réglages de sécurité.
+
+  # --- Watchdog HARD — Pump 1 ---
+  # Last resort: fires at hard_mult× expected duration.
+  # Behaviour depends on dmd_p1_critical:
+  #   ON  (critical pump) → stops ALL pumps + global pause + urgent notification
+  #   OFF (non-critical)  → stops THIS pump only + urgent notification
+  # Default: critical = ON (safe by default)
+  - alias: "DIY my Dose : Watchdog hard — Pump 1"
+    id: dmd_watchdog_hard_p1
+    mode: restart
+    trigger:
+      - platform: state
+        entity_id: switch.dmd_pompe_1
+        to: "on"
+    action:
+      - wait_template: "{{ is_state('switch.dmd_pompe_1', 'off') }}"
+        timeout:
+          seconds: "{{ states('sensor.dmd_p1_hard_timeout') | int(40) }}"
+        continue_on_timeout: true
+      - condition: template
+        value_template: "{{ not wait.completed }}"
+      - choose:
+          - conditions:
+              - condition: state
+                entity_id: input_boolean.dmd_p1_critical
+                state: "on"
+            sequence:
+              - action: switch.turn_off
+                target:
+                  entity_id:
+                    - switch.dmd_pompe_1
+                    - switch.dmd_pompe_2
+                    - switch.dmd_pompe_3
+                    - switch.dmd_pompe_4
+              - action: input_boolean.turn_on
+                target:
+                  entity_id: input_boolean.dmd_pause
+              - action: input_boolean.turn_on
+                target:
+                  entity_id: input_boolean.dmd_safety_locked
+              - action: notify.dmd_admin
+                data:
+                  title: "🚨 DmD TEST — Emergency stop ALL pumps"
+                  message: >-
+                    Hard watchdog on {{ states('input_text.dmd_p1_name') }} (critical).
+                    ALL pumps stopped. Dosing paused. Immediate check required.
+        default:
+          - action: switch.turn_off
+            target:
+              entity_id: switch.dmd_pompe_1
+          - action: notify.dmd_admin
+            data:
+              title: "🚨 DmD TEST — {{ states('input_text.dmd_p1_name') }} hard watchdog"
+              message: >-
+                Hard watchdog on {{ states('input_text.dmd_p1_name') }} (non-critical).
+                Pump stopped. Other pumps continue. Check pump and settings.
+
+  # --- Watchdog HARD — Pump 2 ---
+  - alias: "DIY my Dose : Watchdog hard — Pump 2"
+    id: dmd_watchdog_hard_p2
+    mode: restart
+    trigger:
+      - platform: state
+        entity_id: switch.dmd_pompe_2
+        to: "on"
+    action:
+      - wait_template: "{{ is_state('switch.dmd_pompe_2', 'off') }}"
+        timeout:
+          seconds: "{{ states('sensor.dmd_p2_hard_timeout') | int(40) }}"
+        continue_on_timeout: true
+      - condition: template
+        value_template: "{{ not wait.completed }}"
+      - choose:
+          - conditions:
+              - condition: state
+                entity_id: input_boolean.dmd_p2_critical
+                state: "on"
+            sequence:
+              - action: switch.turn_off
+                target:
+                  entity_id:
+                    - switch.dmd_pompe_1
+                    - switch.dmd_pompe_2
+                    - switch.dmd_pompe_3
+                    - switch.dmd_pompe_4
+              - action: input_boolean.turn_on
+                target:
+                  entity_id: input_boolean.dmd_pause
+              - action: input_boolean.turn_on
+                target:
+                  entity_id: input_boolean.dmd_safety_locked
+              - action: notify.dmd_admin
+                data:
+                  title: "🚨 DmD TEST — Emergency stop ALL pumps"
+                  message: >-
+                    Hard watchdog on {{ states('input_text.dmd_p2_name') }} (critical).
+                    ALL pumps stopped. Dosing paused. Immediate check required.
+        default:
+          - action: switch.turn_off
+            target:
+              entity_id: switch.dmd_pompe_2
+          - action: notify.dmd_admin
+            data:
+              title: "🚨 DmD TEST — {{ states('input_text.dmd_p2_name') }} hard watchdog"
+              message: >-
+                Hard watchdog on {{ states('input_text.dmd_p2_name') }} (non-critical).
+                Pump stopped. Other pumps continue. Check pump and settings.
+
+  # --- Watchdog HARD — Pump 3 ---
+  - alias: "DIY my Dose : Watchdog hard — Pump 3"
+    id: dmd_watchdog_hard_p3
+    mode: restart
+    trigger:
+      - platform: state
+        entity_id: switch.dmd_pompe_3
+        to: "on"
+    action:
+      - wait_template: "{{ is_state('switch.dmd_pompe_3', 'off') }}"
+        timeout:
+          seconds: "{{ states('sensor.dmd_p3_hard_timeout') | int(40) }}"
+        continue_on_timeout: true
+      - condition: template
+        value_template: "{{ not wait.completed }}"
+      - choose:
+          - conditions:
+              - condition: state
+                entity_id: input_boolean.dmd_p3_critical
+                state: "on"
+            sequence:
+              - action: switch.turn_off
+                target:
+                  entity_id:
+                    - switch.dmd_pompe_1
+                    - switch.dmd_pompe_2
+                    - switch.dmd_pompe_3
+                    - switch.dmd_pompe_4
+              - action: input_boolean.turn_on
+                target:
+                  entity_id: input_boolean.dmd_pause
+              - action: input_boolean.turn_on
+                target:
+                  entity_id: input_boolean.dmd_safety_locked
+              - action: notify.dmd_admin
+                data:
+                  title: "🚨 DmD TEST — Emergency stop ALL pumps"
+                  message: >-
+                    Hard watchdog on {{ states('input_text.dmd_p3_name') }} (critical).
+                    ALL pumps stopped. Dosing paused. Immediate check required.
+        default:
+          - action: switch.turn_off
+            target:
+              entity_id: switch.dmd_pompe_3
+          - action: notify.dmd_admin
+            data:
+              title: "🚨 DmD TEST — {{ states('input_text.dmd_p3_name') }} hard watchdog"
+              message: >-
+                Hard watchdog on {{ states('input_text.dmd_p3_name') }} (non-critical).
+                Pump stopped. Other pumps continue. Check pump and settings.
+
+  # --- Watchdog HARD — Pump 4 ---
+  - alias: "DIY my Dose : Watchdog hard — Pump 4"
+    id: dmd_watchdog_hard_p4
+    mode: restart
+    trigger:
+      - platform: state
+        entity_id: switch.dmd_pompe_4
+        to: "on"
+    action:
+      - wait_template: "{{ is_state('switch.dmd_pompe_4', 'off') }}"
+        timeout:
+          seconds: "{{ states('sensor.dmd_p4_hard_timeout') | int(40) }}"
+        continue_on_timeout: true
+      - condition: template
+        value_template: "{{ not wait.completed }}"
+      - choose:
+          - conditions:
+              - condition: state
+                entity_id: input_boolean.dmd_p4_critical
+                state: "on"
+            sequence:
+              - action: switch.turn_off
+                target:
+                  entity_id:
+                    - switch.dmd_pompe_1
+                    - switch.dmd_pompe_2
+                    - switch.dmd_pompe_3
+                    - switch.dmd_pompe_4
+              - action: input_boolean.turn_on
+                target:
+                  entity_id: input_boolean.dmd_pause
+              - action: input_boolean.turn_on
+                target:
+                  entity_id: input_boolean.dmd_safety_locked
+              - action: notify.dmd_admin
+                data:
+                  title: "🚨 DmD TEST — Emergency stop ALL pumps"
+                  message: >-
+                    Hard watchdog on {{ states('input_text.dmd_p4_name') }} (critical).
+                    ALL pumps stopped. Dosing paused. Immediate check required.
+        default:
+          - action: switch.turn_off
+            target:
+              entity_id: switch.dmd_pompe_4
+          - action: notify.dmd_admin
+            data:
+              title: "🚨 DmD TEST — {{ states('input_text.dmd_p4_name') }} hard watchdog"
+              message: >-
+                Hard watchdog on {{ states('input_text.dmd_p4_name') }} (non-critical).
+                Pump stopped. Other pumps continue. Check pump and settings.
+
+  # --- Push ESP32 hardware timeout ---
+  # Triggered when calibration, dose config, or safety multiplier changes,
+  # at HA start, and 5s after ESP32 reconnects (to ensure API is ready).
+  # Pushes sensor.dmd_pX_esp32_timeout → number.dmd_pX_max_duration (ESPHome entity).
+  - alias: "DIY my Dose : Push max duration to ESP32"
+    id: dmd_push_max_duration
+    trigger:
+      - platform: state
+        entity_id:
+          - sensor.dmd_p1_esp32_timeout
+          - sensor.dmd_p2_esp32_timeout
+          - sensor.dmd_p3_esp32_timeout
+          - sensor.dmd_p4_esp32_timeout
+          - input_number.dmd_safety_esp32_mult
+      - platform: homeassistant
+        event: start
+      - platform: state
+        entity_id: binary_sensor.dmd_status
+        to: "on"
+    action:
+      # Small delay on reconnect — give the API time to initialize
+      - delay:
+          seconds: 5
+      - action: number.set_value
+        target:
+          entity_id: number.dmd_p1_max_duration
+        data:
+          value: "{{ [states('sensor.dmd_p1_esp32_timeout') | int(30), 5] | max }}"
+      - action: number.set_value
+        target:
+          entity_id: number.dmd_p2_max_duration
+        data:
+          value: "{{ [states('sensor.dmd_p2_esp32_timeout') | int(30), 5] | max }}"
+      - action: number.set_value
+        target:
+          entity_id: number.dmd_p3_max_duration
+        data:
+          value: "{{ [states('sensor.dmd_p3_esp32_timeout') | int(30), 5] | max }}"
+      - action: number.set_value
+        target:
+          entity_id: number.dmd_p4_max_duration
+        data:
+          value: "{{ [states('sensor.dmd_p4_esp32_timeout') | int(30), 5] | max }}"
+
+  # --- Drift detection — alert after refill (v1.0.5) ---
+  # Se déclenche quand le volume consommé est calculé (après remplissage avec données)
+  - alias: "DIY my Dose : Drift alert after refill"
+    id: dmd_drift_alert_refill
+    trigger:
+      - platform: state
+        entity_id:
+          - input_number.dmd_p1_volume_consumed_last_period
+          - input_number.dmd_p2_volume_consumed_last_period
+          - input_number.dmd_p3_volume_consumed_last_period
+          - input_number.dmd_p4_volume_consumed_last_period
+    condition:
+      - condition: template
+        value_template: >-
+          {% set pumps = [
+            ('p1', 'sensor.dmd_p1_health_status', 'input_text.dmd_p1_name', 'sensor.dmd_p1_drift_pct'),
+            ('p2', 'sensor.dmd_p2_health_status', 'input_text.dmd_p2_name', 'sensor.dmd_p2_drift_pct'),
+            ('p3', 'sensor.dmd_p3_health_status', 'input_text.dmd_p3_name', 'sensor.dmd_p3_drift_pct'),
+            ('p4', 'sensor.dmd_p4_health_status', 'input_text.dmd_p4_name', 'sensor.dmd_p4_drift_pct'),
+          ] %}
+          {{ pumps | selectattr(0, 'in', trigger.entity_id) | list | length > 0
+             and states(trigger.entity_id | replace('volume_consumed_last_period', 'health_status')) != 'OK'
+             and states(trigger.entity_id | replace('volume_consumed_last_period', 'health_status')) != 'Pas de données' }}
+    action:
+      - action: notify.dmd_admin
+        data:
+          title: >-
+            {% set e = trigger.entity_id | replace('input_number.dmd_','') | replace('_volume_consumed_last_period','') %}
+            {% set health = states('sensor.dmd_' + e + '_health_status') %}
+            {% if health == 'Recalibrer' %}🚨{% else %}⚠️{% endif %} DmD TEST — {{ states('input_text.dmd_' + e + '_name') }} dérive détectée
+          message: >-
+            {% set e = trigger.entity_id | replace('input_number.dmd_','') | replace('_volume_consumed_last_period','') %}
+            Dose configurée : {{ states('input_number.dmd_' + e + '_daily_dose') }} ml/j
+            Dose réelle estimée : {{ states('sensor.dmd_' + e + '_real_daily_dose') }} ml/j
+            Dérive : {{ states('sensor.dmd_' + e + '_drift_pct') }}%
+            Statut : {{ states('sensor.dmd_' + e + '_health_status') }}
+
+  # Fix v1.0.6 — Alerte volume insuffisant
+  - alias: "DIY my Dose : Alert tank empty dose blocked"
+    id: dmd_alert_tank_empty_blocked
+    trigger:
+      - platform: template
+        value_template: >-
+          {{ states('input_number.dmd_p1_tank_remaining') | float(0) < states('sensor.dmd_p1_dose_volume') | float(0)
+             and is_state('input_boolean.dmd_p1_auto', 'on') }}
+        id: p1
+      - platform: template
+        value_template: >-
+          {{ states('input_number.dmd_p2_tank_remaining') | float(0) < states('sensor.dmd_p2_dose_volume') | float(0)
+             and is_state('input_boolean.dmd_p2_auto', 'on') }}
+        id: p2
+      - platform: template
+        value_template: >-
+          {{ states('input_number.dmd_p3_tank_remaining') | float(0) < states('sensor.dmd_p3_dose_volume') | float(0)
+             and is_state('input_boolean.dmd_p3_auto', 'on') }}
+        id: p3
+      - platform: template
+        value_template: >-
+          {{ states('input_number.dmd_p4_tank_remaining') | float(0) < states('sensor.dmd_p4_dose_volume') | float(0)
+             and is_state('input_boolean.dmd_p4_auto', 'on') }}
+        id: p4
+    condition:
+      - condition: state
+        entity_id: input_boolean.dmd_sim_mode
+        state: "off"
+    action:
+      - variables:
+          pump_name: >-
+            {% if trigger.id == 'p1' %}{{ states('input_text.dmd_p1_name') }}
+            {% elif trigger.id == 'p2' %}{{ states('input_text.dmd_p2_name') }}
+            {% elif trigger.id == 'p3' %}{{ states('input_text.dmd_p3_name') }}
+            {% else %}{{ states('input_text.dmd_p4_name') }}{% endif %}
+          remaining: >-
+            {% if trigger.id == 'p1' %}{{ states('input_number.dmd_p1_tank_remaining') | round(1) }}
+            {% elif trigger.id == 'p2' %}{{ states('input_number.dmd_p2_tank_remaining') | round(1) }}
+            {% elif trigger.id == 'p3' %}{{ states('input_number.dmd_p3_tank_remaining') | round(1) }}
+            {% else %}{{ states('input_number.dmd_p4_tank_remaining') | round(1) }}{% endif %}
+      - action: notify.dmd_admin
+        data:
+          title: "🚫 DmD TEST — {{ pump_name }} dose bloquée"
+          message: >-
+            Volume restant ({{ remaining }} ml) insuffisant pour la prochaine dose.
+            Remplissez le bidon et appuyez sur "Plein fait !".
+
+
+  # ============================================================
+  #  Déverrouillage sécurité (v1.0.7)
+  #  Déclenché par le bouton dashboard "Déverrouiller"
+  #  Réinitialise dmd_safety_locked et tous les verrous par pompe
+  # ============================================================
+  - alias: "DIY my Dose : Safety unlock"
+    id: dmd_safety_unlock
+    trigger:
+      - platform: state
+        entity_id: input_boolean.dmd_safety_locked
+        to: "off"
+    action:
+      - action: input_boolean.turn_off
+        target:
+          entity_id:
+            - input_boolean.dmd_p1_safety_locked
+            - input_boolean.dmd_p2_safety_locked
+            - input_boolean.dmd_p3_safety_locked
+            - input_boolean.dmd_p4_safety_locked
+      - action: notify.dmd_admin
+        data:
+          title: "✅ DmD TEST — Sécurité déverrouillée"
+          message: >-
+            Le verrou de sécurité a été désactivé manuellement.
+            Le dosage automatique reprend normalement.
+
+  # ============================================================
+  #  Watchdog verrou dosage (v1.0.7)
+  #  Si dmd_dosing reste ON plus longtemps que dmd_dosing_timeout
+  #  → reset + coupe pompes + notification
+  # ============================================================
+  - alias: "DIY my Dose : Watchdog dose lock"
+    id: dmd_watchdog_dose_lock
+    mode: restart
+    trigger:
+      - platform: state
+        entity_id: input_boolean.dmd_dosing
+        to: "on"
+    action:
+      - wait_template: "{{ not is_state('input_boolean.dmd_dosing', 'on') }}"
+        timeout:
+          seconds: "{{ [states('sensor.dmd_p1_lock_timeout') | int(80), states('sensor.dmd_p2_lock_timeout') | int(80), states('sensor.dmd_p3_lock_timeout') | int(80), states('sensor.dmd_p4_lock_timeout') | int(80)] | max }}"
+        continue_on_timeout: true
+      - condition: template
+        value_template: "{{ not wait.completed }}"
+      # Verrou bloqué trop longtemps → reset forcé
+      - action: switch.turn_off
+        target:
+          entity_id:
+            - switch.dmd_pompe_1
+            - switch.dmd_pompe_2
+            - switch.dmd_pompe_3
+            - switch.dmd_pompe_4
+      - action: input_boolean.turn_off
+        target:
+          entity_id: input_boolean.dmd_dosing
+      - action: input_boolean.turn_on
+        target:
+          entity_id: input_boolean.dmd_safety_locked
+      - action: notify.dmd_admin
+        data:
+          title: "🚨 DmD TEST — Verrou dosage bloqué, reset forcé"
+          message: >-
+            Le verrou dmd_dosing est resté actif plus de
+            {{ [states('sensor.dmd_p1_lock_timeout') | int(80), states('sensor.dmd_p2_lock_timeout') | int(80), states('sensor.dmd_p3_lock_timeout') | int(80), states('sensor.dmd_p4_lock_timeout') | int(80)] | max }}s.
+            Toutes les pompes ont été coupées.
+            Vérifiez l'état de la doseuse.

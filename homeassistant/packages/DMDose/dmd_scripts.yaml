@@ -1,7 +1,7 @@
 # ============================================================
 #  Copyright (c) 2026 DIY Moi Ca — diymoica.com
 #  License : Custom — personal use only, no commercial use
-#  See LICENSE file at github.com/diymoica/dmd
+#  See LICENSE file at github.com/diymoica/DMdose
 # ============================================================
 
 ##################################################################################################################################
@@ -22,6 +22,26 @@ script:
     mode: queued
     max: 8
     sequence:
+      # v1.0.7 — bloquer si verrou sécurité actif + notifier
+      - choose:
+          - conditions:
+              - condition: state
+                entity_id: input_boolean.dmd_safety_locked
+                state: "on"
+            sequence:
+              - action: notify.dmd_admin
+                data:
+                  title: "\U0001f512 DmD TEST — Dose impossible"
+                  message: >-
+                    Le système est verrouillé (watchdog déclenché).
+                    La dose n'a pas été envoyée. Vérifiez les pompes
+                    et déverrouillez depuis Réglages > Sécurité.
+              - stop: "Systeme verrouille"
+      # Fix v1.0.6 — bloquer si volume restant insuffisant (sauf simulation)
+      - condition: template
+        value_template: >-
+          {{ is_state('input_boolean.dmd_sim_mode', 'on')
+             or (states(bidon_entity) | float(0)) >= (volume_ml | float(0)) }}
       - service: input_boolean.turn_on
         target:
           entity_id: input_boolean.dmd_dosing
@@ -52,7 +72,7 @@ script:
                 entity_id: input_boolean.dmd_sim_mode
                 state: "off"
             sequence:
-              - service: input_number.set_value
+              - service: number.set_value
                 target:
                   entity_id: "{{ bidon_entity }}"
                 data:
@@ -62,13 +82,13 @@ script:
               - service: counter.increment
                 target:
                   entity_id: "{{ counter_entity }}"
-              - service: input_number.set_value
+              - service: number.set_value
                 target:
                   entity_id: "{{ volume_total_entity }}"
                 data:
                   value: >-
                     {{ (states(volume_total_entity) | float(0) + (volume_ml | float(0))) | round(1) }}
-              - service: input_number.set_value
+              - service: number.set_value
                 target:
                   entity_id: "{{ doses_total_entity }}"
                 data:
@@ -238,38 +258,148 @@ script:
   dmd_tank_full_p1:
     alias: "Pump 1 : Tank refilled"
     sequence:
-      - service: input_number.set_value
+      # 1. Remettre le réservoir au niveau configuré
+      - service: number.set_value
         target:
           entity_id: input_number.dmd_p1_tank_remaining
         data:
           value: "{{ states('input_number.dmd_p1_tank_volume') | float(0) }}"
+      # 2. Sauvegarder la date précédente avant d'écraser
+      - service: input_datetime.set_datetime
+        target:
+          entity_id: input_datetime.dmd_p1_prev_refill
+        data:
+          datetime: >-
+            {{ states('input_datetime.dmd_p1_last_refill') if states('input_datetime.dmd_p1_last_refill') not in ['unknown','unavailable'] else now().strftime('%Y-%m-%d') }}
+      # 3. Sauvegarder la date du remplissage actuel
+      - service: input_datetime.set_datetime
+        target:
+          entity_id: input_datetime.dmd_p1_last_refill
+        data:
+          datetime: "{{ now().strftime('%Y-%m-%d') }}"
+      # 4. Calculer le volume consommé si l'utilisateur a renseigné les champs optionnels
+      #    consumed = remaining_before + added - new_remaining
+      #    Si champs non renseignés (= 0) → pas de calcul
+      - condition: template
+        value_template: >-
+          {{ states('input_number.dmd_p1_remaining_before_refill') | float(0) > 0
+           and states('input_number.dmd_p1_added_volume') | float(0) > 0 }}
+      - service: number.set_value
+        target:
+          entity_id: input_number.dmd_p1_volume_consumed_last_period
+        data:
+          value: >-
+            {{ (states('input_number.dmd_p1_remaining_before_refill') | float(0)
+                 + states('input_number.dmd_p1_added_volume') | float(0)
+                 - states('input_number.dmd_p1_tank_volume') | float(0)) | abs | round(0) }}
 
   dmd_tank_full_p2:
     alias: "Pump 2 : Tank refilled"
     sequence:
-      - service: input_number.set_value
+      # 1. Remettre le réservoir au niveau configuré
+      - service: number.set_value
         target:
           entity_id: input_number.dmd_p2_tank_remaining
         data:
           value: "{{ states('input_number.dmd_p2_tank_volume') | float(0) }}"
+      # 2. Sauvegarder la date précédente avant d'écraser
+      - service: input_datetime.set_datetime
+        target:
+          entity_id: input_datetime.dmd_p2_prev_refill
+        data:
+          datetime: >-
+            {{ states('input_datetime.dmd_p2_last_refill') if states('input_datetime.dmd_p2_last_refill') not in ['unknown','unavailable'] else now().strftime('%Y-%m-%d') }}
+      # 3. Sauvegarder la date du remplissage actuel
+      - service: input_datetime.set_datetime
+        target:
+          entity_id: input_datetime.dmd_p2_last_refill
+        data:
+          datetime: "{{ now().strftime('%Y-%m-%d') }}"
+      # 4. Calculer le volume consommé si l'utilisateur a renseigné les champs optionnels
+      - condition: template
+        value_template: >-
+          {{ states('input_number.dmd_p2_remaining_before_refill') | float(0) > 0
+           and states('input_number.dmd_p2_added_volume') | float(0) > 0 }}
+      - service: number.set_value
+        target:
+          entity_id: input_number.dmd_p2_volume_consumed_last_period
+        data:
+          value: >-
+            {{ (states('input_number.dmd_p2_remaining_before_refill') | float(0)
+                 + states('input_number.dmd_p2_added_volume') | float(0)
+                 - states('input_number.dmd_p2_tank_volume') | float(0)) | abs | round(0) }}
 
   dmd_tank_full_p3:
     alias: "Pump 3 : Tank refilled"
     sequence:
-      - service: input_number.set_value
+      # 1. Remettre le réservoir au niveau configuré
+      - service: number.set_value
         target:
           entity_id: input_number.dmd_p3_tank_remaining
         data:
           value: "{{ states('input_number.dmd_p3_tank_volume') | float(0) }}"
+      # 2. Sauvegarder la date précédente avant d'écraser
+      - service: input_datetime.set_datetime
+        target:
+          entity_id: input_datetime.dmd_p3_prev_refill
+        data:
+          datetime: >-
+            {{ states('input_datetime.dmd_p3_last_refill') if states('input_datetime.dmd_p3_last_refill') not in ['unknown','unavailable'] else now().strftime('%Y-%m-%d') }}
+      # 3. Sauvegarder la date du remplissage actuel
+      - service: input_datetime.set_datetime
+        target:
+          entity_id: input_datetime.dmd_p3_last_refill
+        data:
+          datetime: "{{ now().strftime('%Y-%m-%d') }}"
+      # 4. Calculer le volume consommé si l'utilisateur a renseigné les champs optionnels
+      - condition: template
+        value_template: >-
+          {{ states('input_number.dmd_p3_remaining_before_refill') | float(0) > 0
+           and states('input_number.dmd_p3_added_volume') | float(0) > 0 }}
+      - service: number.set_value
+        target:
+          entity_id: input_number.dmd_p3_volume_consumed_last_period
+        data:
+          value: >-
+            {{ (states('input_number.dmd_p3_remaining_before_refill') | float(0)
+                 + states('input_number.dmd_p3_added_volume') | float(0)
+                 - states('input_number.dmd_p3_tank_volume') | float(0)) | abs | round(0) }}
 
   dmd_tank_full_p4:
     alias: "Pump 4 : Tank refilled"
     sequence:
-      - service: input_number.set_value
+      # 1. Remettre le réservoir au niveau configuré
+      - service: number.set_value
         target:
           entity_id: input_number.dmd_p4_tank_remaining
         data:
           value: "{{ states('input_number.dmd_p4_tank_volume') | float(0) }}"
+      # 2. Sauvegarder la date précédente avant d'écraser
+      - service: input_datetime.set_datetime
+        target:
+          entity_id: input_datetime.dmd_p4_prev_refill
+        data:
+          datetime: >-
+            {{ states('input_datetime.dmd_p4_last_refill') if states('input_datetime.dmd_p4_last_refill') not in ['unknown','unavailable'] else now().strftime('%Y-%m-%d') }}
+      # 3. Sauvegarder la date du remplissage actuel
+      - service: input_datetime.set_datetime
+        target:
+          entity_id: input_datetime.dmd_p4_last_refill
+        data:
+          datetime: "{{ now().strftime('%Y-%m-%d') }}"
+      # 4. Calculer le volume consommé si l'utilisateur a renseigné les champs optionnels
+      - condition: template
+        value_template: >-
+          {{ states('input_number.dmd_p4_remaining_before_refill') | float(0) > 0
+           and states('input_number.dmd_p4_added_volume') | float(0) > 0 }}
+      - service: number.set_value
+        target:
+          entity_id: input_number.dmd_p4_volume_consumed_last_period
+        data:
+          value: >-
+            {{ (states('input_number.dmd_p4_remaining_before_refill') | float(0)
+                 + states('input_number.dmd_p4_added_volume') | float(0)
+                 - states('input_number.dmd_p4_tank_volume') | float(0)) | abs | round(0) }}
 
   dmd_test_notification:
     alias: "DIY my Dose : Test notification"

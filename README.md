@@ -1,6 +1,6 @@
 # DIY my Dose — Universal Smart Dosing Controller
 
-![Version](https://img.shields.io/badge/version-0.9.9-blue)
+![Version](https://img.shields.io/badge/version-1.0.7-blue)
 ![Status](https://img.shields.io/badge/status-stable-green)
 ![HA](https://img.shields.io/badge/Home%20Assistant-2023.x%2B-41BDF5)
 ![ESPHome](https://img.shields.io/badge/ESPHome-required-green)
@@ -23,17 +23,10 @@ reef aquariums, freshwater tanks, hydroponics, plant care, brewing, DIY lab, and
 Each pump is fully configurable — name, schedule, frequency, compatibility with other pumps.
 No logic is imposed : you decide everything.
 
-> ⚠️ **Pre-release** — actively tested on a real reef aquarium. Core features are functional and validated.
-> See the [ROADMAP](ROADMAP.md) for what's coming next.
+> ✅ **Stable v1.0.7** — running on a real reef aquarium. Automatic dosing, hierarchical safety watchdog and safety locks fully operational.
+> See the [ROADMAP](ROADMAP.md) for upcoming features.
 
 ---
-
-## Screenshots
-
-![Dashboard Control](docs/screenshots/dashboard_control_en.png)
-![Dashboard Settings](docs/screenshots/dashboard_setting_en_2.png)
-![Dashboard Settings](docs/screenshots/dashboard_setting_en_1.png)
-![Dashboard Statistics](docs/screenshots/dashboard_stats_en.png)
 
 ### Features
 
@@ -49,9 +42,15 @@ No logic is imposed : you decide everything.
 - **Mechanical delay** — configurable delay between sequential doses (1–30s)
 - **Real-time validation** — warning if window is too short for requested frequency
 - **Global pause** — stops all pumps instantly
+- **3-level HA watchdog** — Soft (pump stop + warning) → Hard (all pumps stop + lock) → Lock (forced reset). Each level triggered at configurable multiples of dose duration (default ×2 / ×4 / ×8)
+- **ESP32 hardware watchdog** — pump cut directly by the ESP32 at ×6 dose duration, even if Home Assistant crashes or WiFi is down
+- **Safety lock** — system lock activated by hard/ESP32/lock watchdog. Blocks all dosing until manually unlocked from dashboard
+- **Per-pump overrides** — each watchdog level can be configured globally or overridden per pump (expert mode)
+- **Hierarchy validation** — sensor warns if multipliers are misconfigured (soft ≥ hard, etc.)
+- **Dose blocked notification** — push notification when a dose is prevented by the safety lock
 
 #### Hardware
-- **Physical manual dose button** — a hardware button on the ESP32 triggers a manual dose, works even without dashboard access *(coming soon)*
+- **Physical manual dose button** — a hardware button on the ESP32 triggers a manual dose, works even without dashboard access *(planned in v1.3.0)*
 
 #### Simulation
 - **Simulation mode** — test full timing and sequencing without affecting real data
@@ -98,7 +97,7 @@ No logic is imposed : you decide everything.
 
 ### Project architecture
 
-#### Package files (`packages/DMDose/`)
+#### Package files (`packages/dmd/`)
 
 The core logic — split into 5 files for readability:
 
@@ -182,7 +181,7 @@ config/
 └── packages/
     ├── common/
     │   └── notify.yaml          ← edit this: point to your mobile device
-    └── DMDose/
+    └── dmd/
         ├── dmd_config.yaml
         ├── dmd_stat.yaml
         ├── dmd_sensors.yaml
@@ -297,7 +296,7 @@ Chaque pompe est entièrement configurable — nom, plage horaire, fréquence, c
 Aucune logique n'est imposée : vous décidez de tout.
 
 > ⚠️ **Pré-release** — testé activement sur un aquarium récifal réel. Les fonctionnalités principales sont opérationnelles.
-> Voir la [ROADMAP](ROADMAP.md) pour ce qui arrive bientôt.
+> Voir la [ROADMAP](ROADMAP.md) pour ce qui arrive avant v1.0.0.
 
 ---
 
@@ -315,9 +314,15 @@ Aucune logique n'est imposée : vous décidez de tout.
 - **Délai mécanique** — délai configurable entre doses séquentielles (1–30s)
 - **Validation en temps réel** — alerte si la fenêtre est trop courte pour la fréquence demandée
 - **Pause globale** — arrête toutes les pompes instantanément
+- **Watchdog HA 3 niveaux** — Soft (arrêt pompe + warning) → Hard (arrêt toutes pompes + verrou) → Verrou (reset forcé). Chaque niveau déclenché à un multiple configurable de la durée de dose (défaut ×2 / ×4 / ×8)
+- **Watchdog hardware ESP32** — coupure directe par l'ESP32 à ×6 durée de dose, même si Home Assistant plante ou si le WiFi est coupé
+- **Verrou de sécurité** — verrou système activé par le watchdog hard/ESP32/verrou. Bloque tout dosage jusqu'au déverrouillage manuel depuis le dashboard
+- **Overrides par pompe** — chaque niveau de watchdog est configurable globalement ou par pompe (mode expert)
+- **Validation de hiérarchie** — sensor d'alerte si les multiplicateurs sont mal configurés (soft ≥ hard, etc.)
+- **Notification dose bloquée** — notification push quand une dose est empêchée par le verrou de sécurité
 
 #### Matériel
-- **Bouton de dose manuelle physique** — un bouton hardware sur l'ESP32 déclenche une dose manuelle, fonctionne même sans accès au dashboard *(bientôt)*
+- **Bouton de dose manuelle physique** — un bouton hardware sur l'ESP32 déclenche une dose manuelle, fonctionne même sans accès au dashboard *(prévu en v1.3.0)*
 
 #### Simulation
 - **Mode simulation** — testez le timing complet sans affecter les données réelles
@@ -364,7 +369,7 @@ Aucune logique n'est imposée : vous décidez de tout.
 
 ### Architecture du projet
 
-#### Les fichiers package (`packages/DMDose/`)
+#### Les fichiers package (`packages/dmd/`)
 
 Le cœur du projet — découpé en 5 fichiers pour rester lisible :
 
@@ -448,7 +453,7 @@ config/
 └── packages/
     ├── common/
     │   └── notify.yaml          ← à modifier : indiquer votre appareil mobile
-    └── DMDose/
+    └── dmd/
         ├── dmd_config.yaml
         ├── dmd_stat.yaml
         ├── dmd_sensors.yaml
