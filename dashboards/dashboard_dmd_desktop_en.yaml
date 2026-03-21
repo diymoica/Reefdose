@@ -13,13 +13,14 @@
 #  YAML anchors pour bar-card et mini-graph-card
 #  (ces cartes n'acceptent pas var() CSS)
 # ============================================================
-kh_color: &kh_color "#F5C518"
-ca_color: &ca_color "#E8547A"
-mg_color: &mg_color "#4A9FD4"
-ph_color: &ph_color "#2ECC71"
+kh_color: &kh_color "var(--p1-color)"
+ca_color: &ca_color "var(--p2-color)"
+mg_color: &mg_color "var(--p3-color)"
+ph_color: &ph_color "var(--p4-color)"
 # ============================================================
 
 title: DIY my Dose
+theme: DMC
 views:
 
 ##################################################################################################################################
@@ -39,18 +40,39 @@ views:
             secondary: "Doses fire every {{ states('input_number.dmd_sim_interval') | int }} min — stats not updated"
             icon: mdi:flask-outline
             icon_color: red
-            cadmd_mod:
+            card_mod:
               style: |
                 ha-card {
-                  background: rgba(231, 76, 60, 0.15);
-                  border: 2px solid #e74c3c;
-                  margin: 8px 32px 0 32px;
-                  display: {{ 'block' if is_state('input_boolean.dmd_sim_mode', 'on') else 'none' }};
+                background: rgba(231, 76, 60, 0.15);
+                border: 2px solid #e74c3c;
+                margin: 8px 32px 0 32px;
+                display: {{ 'block' if is_state('input_boolean.dmd_sim_mode', 'on') else 'none' }};
                 }
             tap_action:
               action: none
           - type: horizontal-stack
             cards:
+              - type: conditional
+                conditions:
+                  - condition: state
+                    entity: input_boolean.dmd_safety_locked
+                    state: 'on'
+                card:
+                  type: custom:mushroom-template-card
+                  primary: "🔒 SYSTEM LOCKED — Dosing suspended"
+                  secondary: >-
+                    Go to Settings > Safety to unlock after verification.
+                  icon: mdi:lock-alert
+                  icon_color: red
+                  card_mod:
+                    style: |
+                      ha-card {
+                      background: rgba(231, 76, 60, 0.15);
+                      border: 2px solid #e74c3c;
+                      margin: 8px 32px 0 32px;
+                      }
+                  tap_action:
+                    action: none
               - type: custom:mushroom-template-card
                 primary: DIY my Dose
                 secondary: "{{ states('sensor.dmd_status') }}"
@@ -71,7 +93,7 @@ views:
                 icon: mdi:lock
                 tap_action:
                   action: none
-            cadmd_mod:
+            card_mod:
               style: |
                 ha-card { margin: 16px 32px 0 32px; }
 
@@ -92,7 +114,7 @@ views:
               icon: "off"
               name: inside
               value: inside
-            cadmd_mod:
+            card_mod:
               style: |
                 ha-card { margin: 8px 32px; }
 
@@ -103,15 +125,15 @@ views:
                 - type: markdown
                   content: >-
                     {{ states('input_text.dmd_p1_name') | default('Pump 1') }}
-                  cadmd_mod:
+                  card_mod:
                     style: |
                       ha-card {
-                        background: var(--p1-bg);
-                        border-left: 3px solid var(--p1-color);
-                        padding: 2px 8px;
-                        font-size: 12px;
-                        font-weight: bold;
-                        margin-bottom: 0;
+                      background: var(--p1-bg);
+                      border-left: 3px solid var(--p1-color);
+                      padding: 2px 8px;
+                      font-size: 12px;
+                      font-weight: bold;
+                      margin-bottom: 0;
                       }
                 - type: glance
                   show_name: true
@@ -122,7 +144,7 @@ views:
                       name: Remaining (ml)
                     - entity: sensor.dmd_p1_days_remaining
                       name: Days remaining
-                  cadmd_mod:
+                  card_mod:
                     style: |
                       ha-card { margin-top: 0; }
               - type: vertical-stack
@@ -130,15 +152,15 @@ views:
                 - type: markdown
                   content: >-
                     {{ states('input_text.dmd_p2_name') | default('Pump 2') }}
-                  cadmd_mod:
+                  card_mod:
                     style: |
                       ha-card {
-                        background: var(--p2-bg);
-                        border-left: 3px solid var(--p2-color);
-                        padding: 2px 8px;
-                        font-size: 12px;
-                        font-weight: bold;
-                        margin-bottom: 0;
+                      background: var(--p2-bg);
+                      border-left: 3px solid var(--p2-color);
+                      padding: 2px 8px;
+                      font-size: 12px;
+                      font-weight: bold;
+                      margin-bottom: 0;
                       }
                 - type: glance
                   show_name: true
@@ -149,7 +171,7 @@ views:
                       name: Remaining (ml)
                     - entity: sensor.dmd_p2_days_remaining
                       name: Days remaining
-                  cadmd_mod:
+                  card_mod:
                     style: |
                       ha-card { margin-top: 0; }
               - type: vertical-stack
@@ -157,15 +179,15 @@ views:
                 - type: markdown
                   content: >-
                     {{ states('input_text.dmd_p3_name') | default('Pump 3') }}
-                  cadmd_mod:
+                  card_mod:
                     style: |
                       ha-card {
-                        background: var(--p3-bg);
-                        border-left: 3px solid var(--p3-color);
-                        padding: 2px 8px;
-                        font-size: 12px;
-                        font-weight: bold;
-                        margin-bottom: 0;
+                      background: var(--p3-bg);
+                      border-left: 3px solid var(--p3-color);
+                      padding: 2px 8px;
+                      font-size: 12px;
+                      font-weight: bold;
+                      margin-bottom: 0;
                       }
                 - type: glance
                   show_name: true
@@ -176,7 +198,7 @@ views:
                       name: Remaining (ml)
                     - entity: sensor.dmd_p3_days_remaining
                       name: Days remaining
-                  cadmd_mod:
+                  card_mod:
                     style: |
                       ha-card { margin-top: 0; }
               - type: vertical-stack
@@ -184,15 +206,15 @@ views:
                 - type: markdown
                   content: >-
                     {{ states('input_text.dmd_p4_name') | default('Pump 4') }}
-                  cadmd_mod:
+                  card_mod:
                     style: |
                       ha-card {
-                        background: var(--p4-bg);
-                        border-left: 3px solid var(--p4-color);
-                        padding: 2px 8px;
-                        font-size: 12px;
-                        font-weight: bold;
-                        margin-bottom: 0;
+                      background: var(--p4-bg);
+                      border-left: 3px solid var(--p4-color);
+                      padding: 2px 8px;
+                      font-size: 12px;
+                      font-weight: bold;
+                      margin-bottom: 0;
                       }
                 - type: glance
                   show_name: true
@@ -203,7 +225,7 @@ views:
                       name: Remaining (ml)
                     - entity: sensor.dmd_p4_days_remaining
                       name: Days remaining
-                  cadmd_mod:
+                  card_mod:
                     style: |
                       ha-card { margin-top: 0; }
 
@@ -214,15 +236,15 @@ views:
               - type: markdown
                 content: >-
                   {{ states('input_text.dmd_p1_name') | default('Pump 1') }}
-                cadmd_mod:
+                card_mod:
                   style: |
                     ha-card {
-                      background: var(--p1-bg);
-                      border-left: 3px solid var(--p1-color);
-                      padding: 2px 8px;
-                      font-size: 12px;
-                      font-weight: bold;
-                      margin-bottom: 0;
+                    background: var(--p1-bg);
+                    border-left: 3px solid var(--p1-color);
+                    padding: 2px 8px;
+                    font-size: 12px;
+                    font-weight: bold;
+                    margin-bottom: 0;
                     }
               - type: glance
                 show_name: true
@@ -231,7 +253,7 @@ views:
                 entities:
                   - entity: counter.dmd_p1_daily_count
                     name: "Doses today"
-                cadmd_mod:
+                card_mod:
                   style: |
                     ha-card { margin-top: 0; }
             - type: vertical-stack
@@ -239,15 +261,15 @@ views:
               - type: markdown
                 content: >-
                   {{ states('input_text.dmd_p2_name') | default('Pump 2') }}
-                cadmd_mod:
+                card_mod:
                   style: |
                     ha-card {
-                      background: var(--p2-bg);
-                      border-left: 3px solid var(--p2-color);
-                      padding: 2px 8px;
-                      font-size: 12px;
-                      font-weight: bold;
-                      margin-bottom: 0;
+                    background: var(--p2-bg);
+                    border-left: 3px solid var(--p2-color);
+                    padding: 2px 8px;
+                    font-size: 12px;
+                    font-weight: bold;
+                    margin-bottom: 0;
                     }
               - type: glance
                 show_name: true
@@ -256,7 +278,7 @@ views:
                 entities:
                   - entity: counter.dmd_p2_daily_count
                     name: "Doses today"
-                cadmd_mod:
+                card_mod:
                   style: |
                     ha-card { margin-top: 0; }
             - type: vertical-stack
@@ -264,15 +286,15 @@ views:
               - type: markdown
                 content: >-
                   {{ states('input_text.dmd_p3_name') | default('Pump 3') }}
-                cadmd_mod:
+                card_mod:
                   style: |
                     ha-card {
-                      background: var(--p3-bg);
-                      border-left: 3px solid var(--p3-color);
-                      padding: 2px 8px;
-                      font-size: 12px;
-                      font-weight: bold;
-                      margin-bottom: 0;
+                    background: var(--p3-bg);
+                    border-left: 3px solid var(--p3-color);
+                    padding: 2px 8px;
+                    font-size: 12px;
+                    font-weight: bold;
+                    margin-bottom: 0;
                     }
               - type: glance
                 show_name: true
@@ -281,7 +303,7 @@ views:
                 entities:
                   - entity: counter.dmd_p3_daily_count
                     name: "Doses today"
-                cadmd_mod:
+                card_mod:
                   style: |
                     ha-card { margin-top: 0; }
             - type: vertical-stack
@@ -289,15 +311,15 @@ views:
               - type: markdown
                 content: >-
                   {{ states('input_text.dmd_p4_name') | default('Pump 4') }}
-                cadmd_mod:
+                card_mod:
                   style: |
                     ha-card {
-                      background: var(--p4-bg);
-                      border-left: 3px solid var(--p4-color);
-                      padding: 2px 8px;
-                      font-size: 12px;
-                      font-weight: bold;
-                      margin-bottom: 0;
+                    background: var(--p4-bg);
+                    border-left: 3px solid var(--p4-color);
+                    padding: 2px 8px;
+                    font-size: 12px;
+                    font-weight: bold;
+                    margin-bottom: 0;
                     }
               - type: glance
                 show_name: true
@@ -306,7 +328,7 @@ views:
                 entities:
                   - entity: counter.dmd_p4_daily_count
                     name: "Doses today"
-                cadmd_mod:
+                card_mod:
                   style: |
                     ha-card { margin-top: 0; }
 
@@ -318,12 +340,12 @@ views:
                   - type: markdown
                     content: >-
                       {{ states('input_text.dmd_p1_name') | default('Pump 1') }}
-                    cadmd_mod:
+                    card_mod:
                       style: |
                         ha-card {
-                          background: var(--p1-bg);
-                          border-left: 4px solid var(--p1-color);
-                          padding: 4px 8px;
+                        background: var(--p1-bg);
+                        border-left: 4px solid var(--p1-color);
+                        padding: 4px 8px;
                         }
                   - type: custom:mushroom-entity-card
                     entity: input_boolean.dmd_p1_auto
@@ -332,11 +354,11 @@ views:
                     tap_action:
                       action: toggle
                     layout: horizontal
-                    cadmd_mod:
+                    card_mod:
                       style: |
                         ha-card {
-                          background: var(--p1-bg-light);
-                          border-left: 4px solid var(--p1-color);
+                        background: var(--p1-bg-light);
+                        border-left: 4px solid var(--p1-color);
                         }
                   - type: custom:mushroom-template-card
                     primary: "Manual dose"
@@ -347,11 +369,11 @@ views:
                       action: call-service
                       service: script.dmd_manual_dose_p1
                     layout: horizontal
-                    cadmd_mod:
+                    card_mod:
                       style: |
                         ha-card {
-                          background: var(--p1-bg-light);
-                          border-left: 4px solid var(--p1-color);
+                        background: var(--p1-bg-light);
+                        border-left: 4px solid var(--p1-color);
                         }
                   - type: custom:mushroom-template-card
                     primary: "Last dose"
@@ -361,11 +383,11 @@ views:
                     tap_action:
                       action: none
                     layout: horizontal
-                    cadmd_mod:
+                    card_mod:
                       style: |
                         ha-card {
-                          background: var(--p1-bg-light);
-                          border-left: 4px solid var(--p1-color);
+                        background: var(--p1-bg-light);
+                        border-left: 4px solid var(--p1-color);
                         }
 
               - type: vertical-stack
@@ -373,12 +395,12 @@ views:
                   - type: markdown
                     content: >-
                       {{ states('input_text.dmd_p2_name') | default('Pump 2') }}
-                    cadmd_mod:
+                    card_mod:
                       style: |
                         ha-card {
-                          background: var(--p2-bg);
-                          border-left: 4px solid var(--p2-color);
-                          padding: 4px 8px;
+                        background: var(--p2-bg);
+                        border-left: 4px solid var(--p2-color);
+                        padding: 4px 8px;
                         }
                   - type: custom:mushroom-entity-card
                     entity: input_boolean.dmd_p2_auto
@@ -387,11 +409,11 @@ views:
                     tap_action:
                       action: toggle
                     layout: horizontal
-                    cadmd_mod:
+                    card_mod:
                       style: |
                         ha-card {
-                          background: var(--p2-bg-light);
-                          border-left: 4px solid var(--p2-color);
+                        background: var(--p2-bg-light);
+                        border-left: 4px solid var(--p2-color);
                         }
                   - type: custom:mushroom-template-card
                     primary: "Manual dose"
@@ -402,11 +424,11 @@ views:
                       action: call-service
                       service: script.dmd_manual_dose_p2
                     layout: horizontal
-                    cadmd_mod:
+                    card_mod:
                       style: |
                         ha-card {
-                          background: var(--p2-bg-light);
-                          border-left: 4px solid var(--p2-color);
+                        background: var(--p2-bg-light);
+                        border-left: 4px solid var(--p2-color);
                         }
                   - type: custom:mushroom-template-card
                     primary: "Last dose"
@@ -416,11 +438,11 @@ views:
                     tap_action:
                       action: none
                     layout: horizontal
-                    cadmd_mod:
+                    card_mod:
                       style: |
                         ha-card {
-                          background: var(--p2-bg-light);
-                          border-left: 4px solid var(--p2-color);
+                        background: var(--p2-bg-light);
+                        border-left: 4px solid var(--p2-color);
                         }
 
               - type: vertical-stack
@@ -428,12 +450,12 @@ views:
                   - type: markdown
                     content: >-
                       {{ states('input_text.dmd_p3_name') | default('Pump 3') }}
-                    cadmd_mod:
+                    card_mod:
                       style: |
                         ha-card {
-                          background: var(--p3-bg);
-                          border-left: 4px solid var(--p3-color);
-                          padding: 4px 8px;
+                        background: var(--p3-bg);
+                        border-left: 4px solid var(--p3-color);
+                        padding: 4px 8px;
                         }
                   - type: custom:mushroom-entity-card
                     entity: input_boolean.dmd_p3_auto
@@ -442,11 +464,11 @@ views:
                     tap_action:
                       action: toggle
                     layout: horizontal
-                    cadmd_mod:
+                    card_mod:
                       style: |
                         ha-card {
-                          background: var(--p3-bg-light);
-                          border-left: 4px solid var(--p3-color);
+                        background: var(--p3-bg-light);
+                        border-left: 4px solid var(--p3-color);
                         }
                   - type: custom:mushroom-template-card
                     primary: "Manual dose"
@@ -457,11 +479,11 @@ views:
                       action: call-service
                       service: script.dmd_manual_dose_p3
                     layout: horizontal
-                    cadmd_mod:
+                    card_mod:
                       style: |
                         ha-card {
-                          background: var(--p3-bg-light);
-                          border-left: 4px solid var(--p3-color);
+                        background: var(--p3-bg-light);
+                        border-left: 4px solid var(--p3-color);
                         }
                   - type: custom:mushroom-template-card
                     primary: "Last dose"
@@ -471,11 +493,11 @@ views:
                     tap_action:
                       action: none
                     layout: horizontal
-                    cadmd_mod:
+                    card_mod:
                       style: |
                         ha-card {
-                          background: var(--p3-bg-light);
-                          border-left: 4px solid var(--p3-color);
+                        background: var(--p3-bg-light);
+                        border-left: 4px solid var(--p3-color);
                         }
 
               - type: vertical-stack
@@ -483,12 +505,12 @@ views:
                   - type: markdown
                     content: >-
                       {{ states('input_text.dmd_p4_name') | default('Pump 4') }}
-                    cadmd_mod:
+                    card_mod:
                       style: |
                         ha-card {
-                          background: var(--p4-bg);
-                          border-left: 4px solid var(--p4-color);
-                          padding: 4px 8px;
+                        background: var(--p4-bg);
+                        border-left: 4px solid var(--p4-color);
+                        padding: 4px 8px;
                         }
                   - type: custom:mushroom-entity-card
                     entity: input_boolean.dmd_p4_auto
@@ -497,11 +519,11 @@ views:
                     tap_action:
                       action: toggle
                     layout: horizontal
-                    cadmd_mod:
+                    card_mod:
                       style: |
                         ha-card {
-                          background: var(--p4-bg-light);
-                          border-left: 4px solid var(--p4-color);
+                        background: var(--p4-bg-light);
+                        border-left: 4px solid var(--p4-color);
                         }
                   - type: custom:mushroom-template-card
                     primary: "Manual dose"
@@ -512,11 +534,11 @@ views:
                       action: call-service
                       service: script.dmd_manual_dose_p4
                     layout: horizontal
-                    cadmd_mod:
+                    card_mod:
                       style: |
                         ha-card {
-                          background: var(--p4-bg-light);
-                          border-left: 4px solid var(--p4-color);
+                        background: var(--p4-bg-light);
+                        border-left: 4px solid var(--p4-color);
                         }
                   - type: custom:mushroom-template-card
                     primary: "Last dose"
@@ -526,14 +548,14 @@ views:
                     tap_action:
                       action: none
                     layout: horizontal
-                    cadmd_mod:
+                    card_mod:
                       style: |
                         ha-card {
-                          background: var(--p4-bg-light);
-                          border-left: 4px solid var(--p4-color);
+                        background: var(--p4-bg-light);
+                        border-left: 4px solid var(--p4-color);
                         }
 
-            cadmd_mod:
+            card_mod:
               style: |
                 ha-card { margin: 8px 32px 16px 32px; }
 
@@ -551,7 +573,7 @@ views:
                 name: Uptime
               - entity: sensor.dmd_ip
                 name: IP
-            cadmd_mod:
+            card_mod:
               style: |
                 ha-card { margin: 0 32px 16px 32px; }
 
@@ -586,26 +608,137 @@ views:
               Set for each pump: daily dose (ml), doses per day, tank volume and alert threshold.
               Verify that "Invalid config" shows **OK**.
 
-              **Step 4 — Chemical compatibility**
-              If certain products must not be mixed, set delays per pair
-              in the **Pump compatibility** section below.
-
-              **Step 5 — Simulation mode**
-              Enable simulation mode and let it run for a few cycles to verify that all
-              pumps trigger correctly. Then disable to switch to production.
-            cadmd_mod:
+              **Step 4 — Safety**
+              Review the **Safety — watchdog** section below. Default values (×2 / ×3           - type: markdown
+            content: '## 🛡️ Safety — watchdog v1.0.7'
+            card_mod:
               style: |
                 ha-card {
-                  background: rgba(33, 150, 243, 0.05);
-                  border-left: 4px solid #2196F3;
-                  margin-bottom: 8px;
+                background: rgba(255, 152, 0, 0.06);
+                border-left: 4px solid #FF9800;
+                padding: 4px 8px;
                 }
-
+          - type: conditional
+            conditions:
+              - condition: state
+                entity: input_boolean.dmd_safety_locked
+                state: 'on'
+            card:
+              type: custom:mushroom-template-card
+              primary: "🔒 SYSTEM LOCKED"
+              secondary: >-
+                Dosing is suspended. Verify pumps before unlocking.
+              icon: mdi:lock-alert
+              icon_color: red
+              tap_action:
+                action: call-service
+                service: input_boolean.turn_off
+                service_data:
+                  entity_id: input_boolean.dmd_safety_locked
+                confirmation:
+                  text: >-
+                    Have you checked the pumps and tank?
+                    This will re-enable automatic dosing.
+              card_mod:
+                style: |
+                  ha-card {
+                  background: rgba(231, 76, 60, 0.15);
+                  border: 2px solid #e74c3c;
+                  }
           - type: entities
-            title: "Global"
-            show_header_toggle: false
+            title: Safety — watchdog multipliers
+            card_mod:
+              style: |
+                ha-card { border-left: 4px solid #FF9800; }
             entities:
-
+              - type: custom:mushroom-template-card
+                primary: Watchdog hierarchy
+                secondary: >-
+                  {% set s = states('sensor.dmd_safety_config_ok') %}
+                  {% if s == 'OK' %}✅ Valid (soft < hard < ESP32 < lock)
+                  {% else %}⚠️ {{ s }}{% endif %}
+                icon: >-
+                  {% if states('sensor.dmd_safety_config_ok') == 'OK' %}mdi:shield-check
+                  {% else %}mdi:shield-off{% endif %}
+                icon_color: >-
+                  {% if states('sensor.dmd_safety_config_ok') == 'OK' %}green
+                  {% else %}red{% endif %}
+                layout: horizontal
+              - type: section
+                label: Global multipliers (x dose duration)
+              - entity: input_number.dmd_safety_soft_mult
+                name: Soft (warning)
+              - entity: input_number.dmd_safety_hard_mult
+                name: Hard (emergency stop)
+              - entity: input_number.dmd_safety_esp32_mult
+                name: ESP32 (hardware cut)
+              - entity: input_number.dmd_safety_lock_mult
+                name: Lock (forced reset)
+              - type: section
+                label: Calculated timeouts Pump 1 (info)
+              - type: custom:mushroom-template-card
+                primary: Soft / Hard / ESP32 / Lock
+                secondary: >-
+                  {{ states('sensor.dmd_p1_soft_timeout') }}s /
+                  {{ states('sensor.dmd_p1_hard_timeout') }}s /
+                  {{ states('sensor.dmd_p1_esp32_timeout') }}s /
+                  {{ states('sensor.dmd_p1_lock_timeout') }}s
+                  (dose = {{ states('sensor.dmd_p1_dose_duration') }}s)
+                icon: mdi:timer-outline
+                icon_color: grey
+                layout: horizontal
+          - type: conditional
+            conditions:
+              - condition: state
+                entity: input_boolean.dmd_safety_expert_mode
+                state: 'on'
+            card:
+              type: entities
+              title: Per-pump overrides (expert mode — 0 = global)
+              card_mod:
+                style: |
+                  ha-card { border-left: 4px solid #FF9800; }
+              entities:
+                - type: section
+                  label: Pump 1
+                - entity: input_number.dmd_p1_safety_soft_mult
+                  name: Soft override
+                - entity: input_number.dmd_p1_safety_hard_mult
+                  name: Hard override
+                - entity: input_number.dmd_p1_safety_esp32_mult
+                  name: ESP32 override
+                - entity: input_number.dmd_p1_safety_lock_mult
+                  name: Lock override
+                - type: section
+                  label: Pump 2
+                - entity: input_number.dmd_p2_safety_soft_mult
+                  name: Soft override
+                - entity: input_number.dmd_p2_safety_hard_mult
+                  name: Hard override
+                - entity: input_number.dmd_p2_safety_esp32_mult
+                  name: ESP32 override
+                - entity: input_number.dmd_p2_safety_lock_mult
+                  name: Lock override
+                - type: section
+                  label: Pump 3
+                - entity: input_number.dmd_p3_safety_soft_mult
+                  name: Soft override
+                - entity: input_number.dmd_p3_safety_hard_mult
+                  name: Hard override
+                - entity: input_number.dmd_p3_safety_esp32_mult
+                  name: ESP32 override
+                - entity: input_number.dmd_p3_safety_lock_mult
+                  name: Lock override
+                - type: section
+                  label: Pump 4
+                - entity: input_number.dmd_p4_safety_soft_mult
+                  name: Soft override
+                - entity: input_number.dmd_p4_safety_hard_mult
+                  name: Hard override
+                - entity: input_number.dmd_p4_safety_esp32_mult
+                  name: ESP32 override
+                - entity: input_number.dmd_p4_safety_lock_mult
+                  name: Lock override
           - type: markdown
             content: >-
               **Pump compatibility delays**
@@ -614,18 +747,18 @@ views:
               Set a minimum delay (in minutes) between two pumps.
               DIY my Dose will automatically wait before triggering the second pump.
               **0 = no delay** (simultaneous dosing allowed).
-            cadmd_mod:
+            card_mod:
               style: |
                 ha-card {
-                  background: rgba(255,255,255,0.03);
-                  border-left: 4px solid #888;
-                  font-size: 13px;
-                  padding: 4px 8px;
+                background: rgba(255,255,255,0.03);
+                border-left: 4px solid #888;
+                font-size: 13px;
+                padding: 4px 8px;
                 }
 
           - type: entities
             title: "Pump compatibility"
-            cadmd_mod:
+            card_mod:
               style: |
                 ha-card { border-left: 4px solid #888; }
             entities:
@@ -650,12 +783,12 @@ views:
                   - type: markdown
                     content: >-
                       {{ states('input_text.dmd_p1_name') | default('Pump 1') }}
-                    cadmd_mod:
+                    card_mod:
                       style: |
                         ha-card {
-                          background: var(--p1-bg);
-                          border-left: 4px solid var(--p1-color);
-                          padding: 4px 8px;
+                        background: var(--p1-bg);
+                        border-left: 4px solid var(--p1-color);
+                        padding: 4px 8px;
                         }
                   - type: entities
                     entities:
@@ -725,18 +858,18 @@ views:
                         layout: horizontal
                       - entity: input_number.dmd_p1_alert_threshold
                         name: Alert threshold (ml)
-                    cadmd_mod:
+                    card_mod:
                       style: |
                         ha-card { border-left: 4px solid var(--p1-color); }
                   - type: markdown
                     content: >-
                       Calibration — {{ states('input_text.dmd_p1_name') | default('Pump 1') }}
-                    cadmd_mod:
+                    card_mod:
                       style: |
                         ha-card {
-                          background: var(--p1-bg);
-                          border-left: 4px solid var(--p1-color);
-                          padding: 4px 8px;
+                        background: var(--p1-bg);
+                        border-left: 4px solid var(--p1-color);
+                        padding: 4px 8px;
                         }
                   - type: entities
                     entities:
@@ -750,7 +883,7 @@ views:
                         name: "4. Collected volume (ml)"
                       - entity: sensor.dmd_p1_flow_rate
                         name: "Flow rate (ml/s)"
-                    cadmd_mod:
+                    card_mod:
                       style: |
                         ha-card { border-left: 4px solid var(--p1-color); }
 
@@ -759,12 +892,12 @@ views:
                   - type: markdown
                     content: >-
                       {{ states('input_text.dmd_p2_name') | default('Pump 2') }}
-                    cadmd_mod:
+                    card_mod:
                       style: |
                         ha-card {
-                          background: var(--p2-bg);
-                          border-left: 4px solid var(--p2-color);
-                          padding: 4px 8px;
+                        background: var(--p2-bg);
+                        border-left: 4px solid var(--p2-color);
+                        padding: 4px 8px;
                         }
                   - type: entities
                     entities:
@@ -834,18 +967,18 @@ views:
                         layout: horizontal
                       - entity: input_number.dmd_p2_alert_threshold
                         name: Alert threshold (ml)
-                    cadmd_mod:
+                    card_mod:
                       style: |
                         ha-card { border-left: 4px solid var(--p2-color); }
                   - type: markdown
                     content: >-
                       Calibration — {{ states('input_text.dmd_p2_name') | default('Pump 2') }}
-                    cadmd_mod:
+                    card_mod:
                       style: |
                         ha-card {
-                          background: var(--p2-bg);
-                          border-left: 4px solid var(--p2-color);
-                          padding: 4px 8px;
+                        background: var(--p2-bg);
+                        border-left: 4px solid var(--p2-color);
+                        padding: 4px 8px;
                         }
                   - type: entities
                     entities:
@@ -859,7 +992,7 @@ views:
                         name: "4. Collected volume (ml)"
                       - entity: sensor.dmd_p2_flow_rate
                         name: "Flow rate (ml/s)"
-                    cadmd_mod:
+                    card_mod:
                       style: |
                         ha-card { border-left: 4px solid var(--p2-color); }
 
@@ -868,12 +1001,12 @@ views:
                   - type: markdown
                     content: >-
                       {{ states('input_text.dmd_p3_name') | default('Pump 3') }}
-                    cadmd_mod:
+                    card_mod:
                       style: |
                         ha-card {
-                          background: var(--p3-bg);
-                          border-left: 4px solid var(--p3-color);
-                          padding: 4px 8px;
+                        background: var(--p3-bg);
+                        border-left: 4px solid var(--p3-color);
+                        padding: 4px 8px;
                         }
                   - type: entities
                     entities:
@@ -943,18 +1076,18 @@ views:
                         layout: horizontal
                       - entity: input_number.dmd_p3_alert_threshold
                         name: Alert threshold (ml)
-                    cadmd_mod:
+                    card_mod:
                       style: |
                         ha-card { border-left: 4px solid var(--p3-color); }
                   - type: markdown
                     content: >-
                       Calibration — {{ states('input_text.dmd_p3_name') | default('Pump 3') }}
-                    cadmd_mod:
+                    card_mod:
                       style: |
                         ha-card {
-                          background: var(--p3-bg);
-                          border-left: 4px solid var(--p3-color);
-                          padding: 4px 8px;
+                        background: var(--p3-bg);
+                        border-left: 4px solid var(--p3-color);
+                        padding: 4px 8px;
                         }
                   - type: entities
                     entities:
@@ -968,7 +1101,7 @@ views:
                         name: "4. Collected volume (ml)"
                       - entity: sensor.dmd_p3_flow_rate
                         name: "Flow rate (ml/s)"
-                    cadmd_mod:
+                    card_mod:
                       style: |
                         ha-card { border-left: 4px solid var(--p3-color); }
 
@@ -977,12 +1110,12 @@ views:
                   - type: markdown
                     content: >-
                       {{ states('input_text.dmd_p4_name') | default('Pump 4') }}
-                    cadmd_mod:
+                    card_mod:
                       style: |
                         ha-card {
-                          background: var(--p4-bg);
-                          border-left: 4px solid var(--p4-color);
-                          padding: 4px 8px;
+                        background: var(--p4-bg);
+                        border-left: 4px solid var(--p4-color);
+                        padding: 4px 8px;
                         }
                   - type: entities
                     entities:
@@ -1052,18 +1185,18 @@ views:
                         layout: horizontal
                       - entity: input_number.dmd_p4_alert_threshold
                         name: Alert threshold (ml)
-                    cadmd_mod:
+                    card_mod:
                       style: |
                         ha-card { border-left: 4px solid var(--p4-color); }
                   - type: markdown
                     content: >-
                       Calibration — {{ states('input_text.dmd_p4_name') | default('Pump 4') }}
-                    cadmd_mod:
+                    card_mod:
                       style: |
                         ha-card {
-                          background: var(--p4-bg);
-                          border-left: 4px solid var(--p4-color);
-                          padding: 4px 8px;
+                        background: var(--p4-bg);
+                        border-left: 4px solid var(--p4-color);
+                        padding: 4px 8px;
                         }
                   - type: entities
                     entities:
@@ -1077,11 +1210,11 @@ views:
                         name: "4. Collected volume (ml)"
                       - entity: sensor.dmd_p4_flow_rate
                         name: "Flow rate (ml/s)"
-                    cadmd_mod:
+                    card_mod:
                       style: |
                         ha-card { border-left: 4px solid var(--p4-color); }
 
-            cadmd_mod:
+            card_mod:
               style: |
                 ha-card { margin: 0 32px 16px 32px; }
 
@@ -1106,12 +1239,12 @@ views:
                   - type: markdown
                     content: >-
                       {{ states('input_text.dmd_p1_name') | default('Pump 1') }}
-                    cadmd_mod:
+                    card_mod:
                       style: |
                         ha-card {
-                          background: var(--p1-bg);
-                          border-left: 4px solid var(--p1-color);
-                          padding: 4px 8px;
+                        background: var(--p1-bg);
+                        border-left: 4px solid var(--p1-color);
+                        padding: 4px 8px;
                         }
                   - type: entities
                     entities:
@@ -1131,7 +1264,7 @@ views:
                         name: Last dose
                       - entity: sensor.dmd_p1_time_since_dose
                         name: Time ago
-                    cadmd_mod:
+                    card_mod:
                       style: |
                         ha-card { border-left: 4px solid var(--p1-color); }
 
@@ -1140,12 +1273,12 @@ views:
                   - type: markdown
                     content: >-
                       {{ states('input_text.dmd_p2_name') | default('Pump 2') }}
-                    cadmd_mod:
+                    card_mod:
                       style: |
                         ha-card {
-                          background: var(--p2-bg);
-                          border-left: 4px solid var(--p2-color);
-                          padding: 4px 8px;
+                        background: var(--p2-bg);
+                        border-left: 4px solid var(--p2-color);
+                        padding: 4px 8px;
                         }
                   - type: entities
                     entities:
@@ -1165,7 +1298,7 @@ views:
                         name: Last dose
                       - entity: sensor.dmd_p2_time_since_dose
                         name: Time ago
-                    cadmd_mod:
+                    card_mod:
                       style: |
                         ha-card { border-left: 4px solid var(--p2-color); }
 
@@ -1174,12 +1307,12 @@ views:
                   - type: markdown
                     content: >-
                       {{ states('input_text.dmd_p3_name') | default('Pump 3') }}
-                    cadmd_mod:
+                    card_mod:
                       style: |
                         ha-card {
-                          background: var(--p3-bg);
-                          border-left: 4px solid var(--p3-color);
-                          padding: 4px 8px;
+                        background: var(--p3-bg);
+                        border-left: 4px solid var(--p3-color);
+                        padding: 4px 8px;
                         }
                   - type: entities
                     entities:
@@ -1199,7 +1332,7 @@ views:
                         name: Last dose
                       - entity: sensor.dmd_p3_time_since_dose
                         name: Time ago
-                    cadmd_mod:
+                    card_mod:
                       style: |
                         ha-card { border-left: 4px solid var(--p3-color); }
 
@@ -1208,12 +1341,12 @@ views:
                   - type: markdown
                     content: >-
                       {{ states('input_text.dmd_p4_name') | default('Pump 4') }}
-                    cadmd_mod:
+                    card_mod:
                       style: |
                         ha-card {
-                          background: var(--p4-bg);
-                          border-left: 4px solid var(--p4-color);
-                          padding: 4px 8px;
+                        background: var(--p4-bg);
+                        border-left: 4px solid var(--p4-color);
+                        padding: 4px 8px;
                         }
                   - type: entities
                     entities:
@@ -1233,11 +1366,11 @@ views:
                         name: Last dose
                       - entity: sensor.dmd_p4_time_since_dose
                         name: Time ago
-                    cadmd_mod:
+                    card_mod:
                       style: |
                         ha-card { border-left: 4px solid var(--p4-color); }
 
-            cadmd_mod:
+            card_mod:
               style: |
                 ha-card { margin: 16px 32px 8px 32px; }
 
@@ -1258,7 +1391,7 @@ views:
                 color: *mg_color
               - entity: input_number.dmd_p4_tank_remaining
                 color: *ph_color
-            cadmd_mod:
+            card_mod:
               style: |
                 ha-card { margin: 0 32px 16px 32px; }
 
@@ -1275,7 +1408,7 @@ views:
 
               To clear the graph, reduce retention
               in Settings → System → Repair.
-            cadmd_mod:
+            card_mod:
               style: |
                 ha-card { margin: 0 32px 0 32px; }
 
@@ -1289,11 +1422,11 @@ views:
               service: script.dmd_reset_all
               confirmation:
                 text: "Warning! This will reset: dosed volumes, dose counters, missed doses, remaining reservoir volumes and last dose timestamps. Calibration is preserved. Are you sure?"
-            cadmd_mod:
+            card_mod:
               style: |
                 ha-card {
-                  margin: 8px 32px 16px 32px;
-                  background: rgba(231, 76, 60, 0.15);
-                  border: 2px solid #e74c3c;
-                  color: #e74c3c;
+                margin: 8px 32px 16px 32px;
+                background: rgba(231, 76, 60, 0.15);
+                border: 2px solid #e74c3c;
+                color: #e74c3c;
                 }
